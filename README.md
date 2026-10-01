@@ -110,25 +110,19 @@ ReverseMarkdown) to check what dev.to would store.
 
 ## Releases
 
-`jekyll-devto` follows [Semantic Versioning](https://semver.org). Given a version number `MAJOR.MINOR.PATCH`, increment the:
+`jekyll-devto` follows [Semantic Versioning](https://semver.org), and releases are automated with [release-please](https://github.com/googleapis/release-please) from [Conventional Commits](https://www.conventionalcommits.org):
 
-- **MAJOR** version for incompatible changes
-- **MINOR** version for backwards-compatible new functionality
-- **PATCH** version for backwards-compatible bug fixes
-
-While the version is `0.x`, a MINOR bump may also carry breaking changes.
+- `fix:` bumps the **PATCH** version, and so do `perf:`, `refactor:` and `docs:`
+- `feat:` bumps the **MINOR** version
+- `BREAKING CHANGE:` in the commit footer bumps the **MAJOR** version (the MINOR one while the version is `0.x`)
+- `test:`, `ci:` and `chore:` are left out of the CHANGELOG and do not trigger a release on their own
 
 ### Steps to release a new version
 
-1. Update the version number in `lib/jekyll/devto/version.rb`
-2. In `CHANGELOG.md`, rename the `main (unreleased)` header to the new version and the release date, and start a new empty `main (unreleased)` header above it
-3. Commit your changes to a `release/v0.x.x` branch
-4. Push your changes and submit a pull request `Release v0.x.x`
-5. Merge your pull request to the `main` branch
-6. Tag the latest version on `main`: `git tag v0.x.x`
-7. Push the tag to GitHub: `git push --tags`
-8. Build the gem: `gem build jekyll-devto.gemspec`
-9. Push to RubyGems: `gem push jekyll-devto-0.x.x.gem`
+1. Merge pull requests to `main` with Conventional Commit titles (`fix(html): ...`, `feat(publisher): ...`)
+2. release-please keeps a `chore(main): release x.y.z` pull request open with the version bump in `lib/jekyll/devto/version.rb` and the new `CHANGELOG.md` entries
+3. Review and merge that pull request
+4. The `Release` workflow tags `vx.y.z`, creates the GitHub release, runs the tests, and pushes the gem to RubyGems with [trusted publishing](https://guides.rubygems.org/trusted-publishing/), so no API key or MFA code is needed
 
 ## License
 
