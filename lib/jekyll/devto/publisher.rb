@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "rexml/document"
-require "time"
+require 'net/http'
+require 'rexml/document'
+require 'time'
 
 module Jekyll
   module Devto
@@ -48,8 +48,8 @@ module Jekyll
 
           # One rejected post must not stop the rest, or every retry would stop at it.
           begin
-            result = @client.update(draft["id"], published: true, body_markdown: self.class.published_body(draft["body_markdown"]))
-            sent[draft["id"]] = post
+            result = @client.update(draft['id'], published: true, body_markdown: self.class.published_body(draft['body_markdown']))
+            sent[draft['id']] = post
             @out.puts "  sent    #{post.title.inspect} -> #{result['url']}"
           rescue StandardError => e
             failures << post
@@ -70,11 +70,11 @@ module Jekyll
       end
 
       def due_posts
-        REXML::Document.new(read_feed).get_elements("//item").filter_map do |item|
-          date = Time.rfc2822(item.elements["pubDate"].text)
+        REXML::Document.new(read_feed).get_elements('//item').filter_map do |item|
+          date = Time.rfc2822(item.elements['pubDate'].text)
           next if date > @now || date < @now - (@days * 86_400)
 
-          Post.new(title: item.elements["title"].text.to_s.strip, link: item.elements["link"].text.to_s.strip, date: date)
+          Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date)
         end
       end
 
@@ -94,13 +94,13 @@ module Jekyll
       # canonical_url first: dev.to sets it to the post's link when the feed
       # source has "Mark the RSS source as canonical URL" on. Title otherwise.
       def find_draft(drafts, post)
-        drafts.find { |d| d["canonical_url"].to_s.chomp("/") == post.link.chomp("/") } ||
-          drafts.find { |d| d["title"].to_s.strip == post.title }
+        drafts.find { |d| d['canonical_url'].to_s.chomp('/') == post.link.chomp('/') } ||
+          drafts.find { |d| d['title'].to_s.strip == post.title }
       end
 
       def report_missing(post, drafts)
         @out.puts "  skip    #{post.title.inspect}: no dev.to draft (not imported yet, or already published)"
-        near = drafts.map { |d| d["title"].to_s }.find { |t| t.downcase.include?(post.title.downcase[0, 20]) }
+        near = drafts.map { |d| d['title'].to_s }.find { |t| t.downcase.include?(post.title.downcase[0, 20]) }
         @out.puts "          closest draft title: #{near.inspect}" if near
       end
 
@@ -109,7 +109,7 @@ module Jekyll
       def still_drafts(sent)
         return [] if sent.empty?
 
-        ids = @client.drafts.map { |d| d["id"] } & sent.keys
+        ids = @client.drafts.map { |d| d['id'] } & sent.keys
         ids.map { |id| sent[id] }.each { |post| @err.puts "  STILL A DRAFT: #{post.title.inspect}" }
       end
     end

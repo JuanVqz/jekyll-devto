@@ -10,41 +10,41 @@
 # The API key comes from the DEVTO_API_KEY environment variable
 # (https://dev.to/settings/extensions).
 
-require "optparse"
-require "yaml"
-require_relative "../lib/jekyll/devto/version"
-require_relative "../lib/jekyll/devto/client"
-require_relative "../lib/jekyll/devto/publisher"
+require 'optparse'
+require 'yaml'
+require_relative '../lib/jekyll/devto/version'
+require_relative '../lib/jekyll/devto/client'
+require_relative '../lib/jekyll/devto/publisher'
 
 def default_feed
-  config = File.exist?("_config.yml") ? YAML.safe_load_file("_config.yml", aliases: true) || {} : {}
-  url = config["url"].to_s
+  config = File.exist?('_config.yml') ? YAML.safe_load_file('_config.yml', aliases: true) || {} : {}
+  url = config['url'].to_s
   return nil if url.empty?
 
-  path = config.dig("devto", "path") if config["devto"].is_a?(Hash)
+  path = config.dig('devto', 'path') if config['devto'].is_a?(Hash)
   "#{url.chomp('/')}#{config['baseurl']}/#{(path || 'devto.xml').sub(%r{\A/}, '')}"
 end
 
 options = { days: 7, publish: false, feed: nil }
 parser = OptionParser.new do |o|
-  o.banner = "Usage: jekyll-devto publish [options]"
-  o.on("--publish", "Publish the drafts (default: dry run)") { options[:publish] = true }
-  o.on("--days N", Integer, "Only posts published in the last N days (default: 7)") { |n| options[:days] = n }
-  o.on("--feed URL_OR_PATH", "The dev.to feed (default: url + devto.xml from _config.yml)") { |f| options[:feed] = f }
-  o.on("-v", "--version", "Print the version") { puts Jekyll::Devto::VERSION; exit }
+  o.banner = 'Usage: jekyll-devto publish [options]'
+  o.on('--publish', 'Publish the drafts (default: dry run)') { options[:publish] = true }
+  o.on('--days N', Integer, 'Only posts published in the last N days (default: 7)') { |n| options[:days] = n }
+  o.on('--feed URL_OR_PATH', 'The dev.to feed (default: url + devto.xml from _config.yml)') { |f| options[:feed] = f }
+  o.on('-v', '--version', 'Print the version') { puts Jekyll::Devto::VERSION; exit }
 end
 parser.parse!
 command = ARGV.shift
 
-abort parser.banner unless command == "publish"
+abort parser.banner unless command == 'publish'
 
 feed = options[:feed] || default_feed
-abort "No feed: pass --feed, or run from a site whose _config.yml sets url." unless feed
+abort 'No feed: pass --feed, or run from a site whose _config.yml sets url.' unless feed
 
 begin
   failures = Jekyll::Devto::Publisher.new(
     feed: feed,
-    client: Jekyll::Devto::Client.new(ENV.fetch("DEVTO_API_KEY", nil)),
+    client: Jekyll::Devto::Client.new(ENV.fetch('DEVTO_API_KEY', nil)),
     days: options[:days],
     publish: options[:publish]
   ).run

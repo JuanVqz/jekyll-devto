@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require "test_helper"
+require 'test_helper'
 
 class HTMLTest < Minitest::Test
-  BASE = "https://example.com"
+  BASE = 'https://example.com'
 
   def convert(html) = Jekyll::Devto::HTML.convert(html, BASE)
 
