@@ -1,0 +1,7 @@
+title: "Fixture & Blog"
+description: "A test site"
+url: "https://example.com"
+kramdown:
+  syntax_highlighter_opts:
+    block:
+      line_numbers: true
