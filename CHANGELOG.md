@@ -1,7 +1,13 @@
-# Changelog
+# main [(unreleased)](https://github.com/JuanVqz/jekyll-devto/commits/main)
 
-## 0.1.0 (unreleased)
-
-- `/devto.xml`: an RSS feed with the full rendered post for dev.to's import, with Rouge line-number
-  gutters removed from code blocks and root-relative links and images made absolute.
-- `jekyll-devto publish`: publishes the imported dev.to drafts of posts published in the last N days.
+- [FEATURE: `/devto.xml`, an RSS feed with the full rendered post for dev.to's import, with Rouge line-number gutters removed from code blocks and root-relative links and images made absolute](https://github.com/JuanVqz/jekyll-devto/commit/265a19e)
+- [FEATURE: `jekyll-devto publish` publishes the imported dev.to drafts of posts published in the last N days](https://github.com/JuanVqz/jekyll-devto/commit/265a19e)
+- [CHORE: Use single quotes for strings without interpolation](https://github.com/JuanVqz/jekyll-devto/pull/1)
+- [BUGFIX: Links in the feed no longer get `baseurl` twice on sites that set it](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: `{% highlight lang linenos %}` blocks lose their line numbers too, not only fenced blocks](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: Publishing only flips `published: false` inside the draft's front matter, never a matching line in the post body](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: Reading the feed follows redirects, and network or SSL errors are reported instead of crashing](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: When confirming the publish fails, the posts already sent are still reported and the run fails](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: An invalid option prints the usage instead of a backtrace](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [BUGFIX: The example workflow passes the `days` input through `env`, so a typed value cannot run as shell code](https://github.com/JuanVqz/jekyll-devto/pull/2)
+- [DOC: Release steps in the README](https://github.com/JuanVqz/jekyll-devto/pull/2)

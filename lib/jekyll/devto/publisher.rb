@@ -3,6 +3,7 @@
 require 'net/http'
 require 'rexml/document'
 require 'time'
+require_relative 'client'
 
 module Jekyll
   module Devto
@@ -14,6 +15,8 @@ module Jekyll
     # purpose: the feed carries the whole archive, and publishing every match
     # would push years of old posts to dev.to at once.
     class Publisher
+      MAX_REDIRECTS = 5
+
       Post = Struct.new(:title, :link, :date, keyword_init: true)
 
       def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
@@ -66,7 +69,11 @@ module Jekyll
       # and dev.to applies that over the request's `published` field, so it is
       # flipped inside the body as well.
       def self.published_body(markdown)
-        markdown.to_s.sub(/\A(---\r?\n.*?)^published:[ \t]*false[ \t]*(?=\r?$)(.*?\r?\n---)/m, '\1published: true\2')
+        # Only inside the front matter: up to the first closing ---, so a
+        # "published: false" line in the post body is left alone.
+        markdown.to_s.sub(/\A---\r?\n.*?^---[ \t]*\r?$/m) do |front_matter|
+          front_matter.sub(/^published:[ \t]*false[ \t]*(?=\r?$)/, 'published: true')
+        end
       end
 
       def due_posts
@@ -80,14 +87,20 @@ module Jekyll
 
       private
 
+      # Follows redirects (http to https, apex to www), which Net::HTTP does not.
       def read_feed
         return File.read(@feed) unless @feed.match?(%r{\Ahttps?://})
 
-        res = Net::HTTP.get_response(URI(@feed))
-        raise Client::Error, "could not read #{@feed}: #{res.code}" unless res.is_a?(Net::HTTPSuccess)
+        uri = URI(@feed)
+        MAX_REDIRECTS.succ.times do
+          res = Net::HTTP.get_response(uri)
+          return res.body if res.is_a?(Net::HTTPSuccess)
+          raise Client::Error, "could not read #{@feed}: #{res.code}" unless res.is_a?(Net::HTTPRedirection)
 
-        res.body
-      rescue SystemCallError, SocketError, Timeout::Error => e
+          uri = URI.join(uri, res['location'])
+        end
+        raise Client::Error, "could not read #{@feed}: more than #{MAX_REDIRECTS} redirects"
+      rescue *Client::NETWORK_ERRORS => e
         raise Client::Error, "could not read #{@feed}: #{e.message}"
       end
 
@@ -111,6 +124,11 @@ module Jekyll
 
         ids = @client.drafts.map { |d| d['id'] } & sent.keys
         ids.map { |id| sent[id] }.each { |post| @err.puts "  STILL A DRAFT: #{post.title.inspect}" }
+      rescue Client::Error => e
+        # The PUTs already went out, so say which posts could not be confirmed
+        # rather than losing the summary.
+        @err.puts "  could not confirm #{sent.size} post(s) went out: #{e.message}"
+        sent.values
       end
     end
   end

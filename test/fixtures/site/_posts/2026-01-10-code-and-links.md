@@ -24,3 +24,15 @@ puts "file"
 ```
 <a href="/raw">plain block</a>
 ```
+
+{% highlight ruby linenos %}
+def tagged
+  :linenos
+end
+{% endhighlight %}
+
+{% highlight ruby %}
+puts "tag without linenos"
+{% endhighlight %}
+
+A [scoped link]({{ "/scoped/" | relative_url }}).

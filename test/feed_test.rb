@@ -43,6 +43,23 @@ class FeedTest < Minitest::Test
     assert_includes feed, %(<atom:link href="https://example.com/devto.xml")
   end
 
+  def test_highlight_tag_with_linenos_loses_its_gutter
+    body = item('Code & Links').elements['content:encoded'].text
+
+    assert_includes body, "<pre><code>def tagged\n  :linenos\nend\n</code></pre>"
+    refute_includes body, 'rouge-table'
+  end
+
+  # Content links already carry baseurl (relative_url adds it), so it must not
+  # be added again.
+  def test_baseurl_is_not_doubled
+    custom = build_feed('baseurl' => '/blog')
+    body = REXML::Document.new(custom).get_elements('//item').find { |i| i.elements['title'].text == 'Code & Links' }.elements['content:encoded'].text
+
+    assert_includes body, %(href="https://example.com/blog/scoped/")
+    refute_includes body, '/blog/blog/'
+  end
+
   def test_limit_and_path_are_configurable
     custom = build_feed('devto' => { 'path' => '/feeds/dev.xml', 'limit' => 1 })
 

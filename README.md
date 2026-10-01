@@ -7,26 +7,22 @@ dev.to can import posts from your feed, but with a typical Jekyll feed you get:
 - **Cut-off posts.** Feeds that carry a summary, or an empty `<content src="...">` link (the
   [Chirpy](https://github.com/cotes2020/jekyll-theme-chirpy) theme's feed does this), import as the
   summary only.
-- **Line numbers inside the code.** Rouge with `line_numbers: true` renders each code block as a table
-  with a gutter, and dev.to's HTML to Markdown conversion keeps the numbers as code.
+- **Line numbers inside the code.** Rouge with `line_numbers: true`, or a `{% highlight ruby linenos %}` tag, renders the code as a table with a gutter, and dev.to's HTML to Markdown conversion keeps the numbers as code.
 - **Broken links and images.** Root-relative URLs point nowhere once the post lives on dev.to.
 - **Drafts you publish by hand.** dev.to always imports as drafts.
 
 This gem fixes all four:
 
-1. A generator that adds `/devto.xml`, an RSS feed with the full rendered post, plain code blocks
-   and absolute URLs.
-2. A `jekyll-devto publish` command that publishes the imported drafts once their post is live on
-   your site.
+1. A generator that adds `/devto.xml`, an RSS feed with the full rendered post, plain code blocks and absolute URLs.
+2. A `jekyll-devto publish` command that publishes the imported drafts once their post is live on your site.
 
-It works from the HTML Jekyll already rendered, so anything your theme and Kramdown support comes
-through. It never edits your posts.
+It works from the HTML Jekyll already rendered, so anything your theme and Kramdown support comes through. It never edits your posts.
 
 ## Install
 
 ```ruby
 # Gemfile
-gem "jekyll-devto"
+gem 'jekyll-devto'
 ```
 
 ```yaml
@@ -76,8 +72,8 @@ imported from each one, and publishes it.
 
 ### On a schedule with GitHub Actions
 
-[`examples/devto-publish.yml`](examples/devto-publish.yml) runs it after each deploy and once a
-day. Add the key as a repository secret:
+[`examples/devto-publish.yml`](examples/devto-publish.yml) runs it after each deploy and once a day.
+Add the key as a repository secret:
 
 ```sh
 gh secret set DEVTO_API_KEY
@@ -111,6 +107,28 @@ bundle exec rake test
 
 The feed tests build a fixture site and replay dev.to's import (Feedjira, Forem's class stripping,
 ReverseMarkdown) to check what dev.to would store.
+
+## Releases
+
+`jekyll-devto` follows [Semantic Versioning](https://semver.org). Given a version number `MAJOR.MINOR.PATCH`, increment the:
+
+- **MAJOR** version for incompatible changes
+- **MINOR** version for backwards-compatible new functionality
+- **PATCH** version for backwards-compatible bug fixes
+
+While the version is `0.x`, a MINOR bump may also carry breaking changes.
+
+### Steps to release a new version
+
+1. Update the version number in `lib/jekyll/devto/version.rb`
+2. In `CHANGELOG.md`, rename the `main (unreleased)` header to the new version and the release date, and start a new empty `main (unreleased)` header above it
+3. Commit your changes to a `release/v0.x.x` branch
+4. Push your changes and submit a pull request `Release v0.x.x`
+5. Merge your pull request to the `main` branch
+6. Tag the latest version on `main`: `git tag v0.x.x`
+7. Push the tag to GitHub: `git push --tags`
+8. Build the gem: `gem build jekyll-devto.gemspec`
+9. Push to RubyGems: `gem push jekyll-devto-0.x.x.gem`
 
 ## License
 

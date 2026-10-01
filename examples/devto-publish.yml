@@ -34,6 +34,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+      # Passed through env, never interpolated into the script: a value typed
+      # into the manual trigger would otherwise run as shell code.
+      DAYS: ${{ inputs.days || '7' }}
 
     steps:
       - uses: actions/checkout@v5
@@ -44,4 +47,4 @@ jobs:
 
       - name: Publish dev.to drafts
         if: env.DEVTO_API_KEY != ''
-        run: bundle exec jekyll-devto publish --publish --days "${{ inputs.days || '7' }}"
+        run: bundle exec jekyll-devto publish --publish --days "$DAYS"

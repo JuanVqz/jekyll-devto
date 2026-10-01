@@ -55,6 +55,24 @@ class HTMLTest < Minitest::Test
     assert_equal html, convert(html)
   end
 
+  def test_strips_the_gutter_of_a_highlight_tag_with_linenos
+    html = <<~HTML.chomp
+      <figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><table class="rouge-table"><tbody><tr><td class="gutter gl"><pre class="lineno">1
+      2
+      </pre></td><td class="code"><pre><span class="k">def</span> <span class="nf">x</span>
+      <span class="k">end</span>
+      </pre></td></tr></tbody></table></code></pre></figure>
+    HTML
+
+    assert_equal "<pre><code>def x\nend\n</code></pre>", convert(html)
+  end
+
+  def test_unwraps_a_highlight_tag_without_linenos
+    html = %(<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="nb">puts</span> <span class="s2">"x"</span></code></pre></figure>)
+
+    assert_equal %(<pre><code>puts "x"</code></pre>), convert(html)
+  end
+
   def test_base_url_with_a_trailing_slash
     assert_equal %(<a href="https://example.com/x">x</a>), Jekyll::Devto::HTML.convert(%(<a href="/x">x</a>), "#{BASE}/")
   end

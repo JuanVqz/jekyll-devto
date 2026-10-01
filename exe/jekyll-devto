@@ -33,7 +33,11 @@ parser = OptionParser.new do |o|
   o.on('--feed URL_OR_PATH', 'The dev.to feed (default: url + devto.xml from _config.yml)') { |f| options[:feed] = f }
   o.on('-v', '--version', 'Print the version') { puts Jekyll::Devto::VERSION; exit }
 end
-parser.parse!
+begin
+  parser.parse!
+rescue OptionParser::ParseError => e
+  abort "#{e.message}\n#{parser}"
+end
 command = ARGV.shift
 
 abort parser.banner unless command == 'publish'

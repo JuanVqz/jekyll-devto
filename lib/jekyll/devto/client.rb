@@ -2,6 +2,8 @@
 
 require 'json'
 require 'net/http'
+require 'openssl'
+require_relative 'version'
 
 module Jekyll
   module Devto
@@ -11,6 +13,11 @@ module Jekyll
       PER_PAGE = 1000
 
       Error = Class.new(StandardError)
+
+      # What a request can raise before there is a response to look at. Each
+      # is turned into Error, so the CLI reports it instead of crashing.
+      NETWORK_ERRORS = [SystemCallError, SocketError, IOError, Timeout::Error,
+                        OpenSSL::SSL::SSLError, Net::HTTPBadResponse, Net::ProtocolError].freeze
 
       def initialize(api_key)
         raise Error, 'DEVTO_API_KEY is not set' if api_key.to_s.empty?
@@ -45,6 +52,8 @@ module Jekyll
         raise Error, "#{req.method} #{uri.path} failed: #{res.code} #{res.body}" unless res.is_a?(Net::HTTPSuccess)
 
         JSON.parse(res.body)
+      rescue *NETWORK_ERRORS, JSON::ParserError => e
+        raise Error, "#{verb::METHOD} #{uri.path} failed: #{e.message}"
       end
     end
   end

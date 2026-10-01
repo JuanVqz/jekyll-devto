@@ -83,6 +83,12 @@ class PublisherTest < Minitest::Test
     assert_equal "---\r\ntitle: New Post\r\npublished: true\r\n---\r\n\r\npublished: false stays in the body", article[:body_markdown]
   end
 
+  def test_only_the_front_matter_is_flipped
+    body = "---\ntitle: X\n---\n\nSet\npublished: false\nin your own front matter.\n\n---\n\nMore."
+
+    assert_equal body, Jekyll::Devto::Publisher.published_body(body)
+  end
+
   def test_matches_by_canonical_url_before_title
     client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)
