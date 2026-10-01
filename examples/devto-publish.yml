@@ -1,0 +1,50 @@
+# Copy to .github/workflows/devto-publish.yml and set the DEVTO_API_KEY
+# repository secret (https://dev.to/settings/extensions).
+name: "Publish to dev.to"
+on:
+  # Right after a deploy, so a post goes out on dev.to the day it goes live.
+  # Use the `name:` of your deploy workflow.
+  workflow_run:
+    workflows: ["Build and Deploy"]
+    types: [completed]
+    branches: [main]
+
+  # dev.to imports the feed on its own schedule, so the draft may not exist
+  # yet when the deploy finishes. Retry once a day; posts already published
+  # are skipped, so repeated runs change nothing.
+  schedule:
+    - cron: "0 21 * * *"
+
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Publish drafts of posts published in the last N days"
+        default: "7"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "devto-publish"
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+      # Passed through env, never interpolated into the script: a value typed
+      # into the manual trigger would otherwise run as shell code.
+      DAYS: ${{ inputs.days || '7' }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Publish dev.to drafts
+        if: env.DEVTO_API_KEY != ''
+        run: bundle exec jekyll-devto publish --publish --days "$DAYS"

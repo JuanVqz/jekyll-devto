@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+{%- assign devto = site.devto | default: empty -%}
+{%- comment -%} Not site.url + baseurl: links in content already carry baseurl (relative_url adds it). {%- endcomment -%}
+{%- assign site_url = site.url -%}
+{%- assign posts = site.posts | where_exp: "post", "post.devto != false" -%}
+{%- if devto.limit %}{% assign posts = posts | slice: 0, devto.limit %}{% endif %}
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>{{ site.title | default: site.name | xml_escape }}</title>
+    <link>{{ "/" | absolute_url }}</link>
+    <description>{{ site.description | xml_escape }}</description>
+    {%- if site.lang %}
+    <language>{{ site.lang }}</language>
+    {%- endif %}
+    <lastBuildDate>{{ site.time | date_to_rfc822 }}</lastBuildDate>
+    <atom:link href="{{ page.url | absolute_url }}" rel="self" type="application/rss+xml" />
+{%- for post in posts %}
+  {%- assign post_url = post.url | absolute_url %}
+    <item>
+      <title>{{ post.title | strip_html | strip | xml_escape }}</title>
+      <link>{{ post_url }}</link>
+      <guid isPermaLink="true">{{ post_url }}</guid>
+      <pubDate>{{ post.date | date_to_rfc822 }}</pubDate>
+    {%- assign tags = post.tags | default: post.categories %}
+    {%- for tag in tags %}
+      <category>{{ tag | xml_escape }}</category>
+    {%- endfor %}
+      <description>{{ post.description | default: post.excerpt | strip_html | strip_newlines | truncatewords: 60 | xml_escape }}</description>
+      <content:encoded>{{ post.content | devto_html: site_url | xml_escape }}</content:encoded>
+    </item>
+{%- endfor %}
+  </channel>
+</rss>

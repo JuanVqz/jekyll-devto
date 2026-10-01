@@ -1,0 +1,5 @@
+/Gemfile.lock
+/pkg/
+*.gem
+test/fixtures/site/_site/
+test/fixtures/site/.jekyll-cache/
