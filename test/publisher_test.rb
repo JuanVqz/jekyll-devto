@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "test_helper"
-require "stringio"
+require 'test_helper'
+require 'stringio'
 
 class PublisherTest < Minitest::Test
   NOW = Time.utc(2026, 1, 12, 18)
@@ -34,18 +34,18 @@ class PublisherTest < Minitest::Test
       @updates << [id, article]
       raise Jekyll::Devto::Client::Error, "PUT /api/articles/#{id} failed: 422" if @reject.include?(id)
 
-      @drafts.reject! { |d| d["id"] == id } unless @ignore.include?(id)
-      { "url" => "https://dev.to/x/#{id}" }
+      @drafts.reject! { |d| d['id'] == id } unless @ignore.include?(id)
+      { 'url' => "https://dev.to/x/#{id}" }
     end
   end
 
   def draft(id, title, canonical: nil, body: "---\ntitle: #{title}\npublished: false\n---\n\nBody")
-    { "id" => id, "title" => title, "canonical_url" => canonical, "body_markdown" => body }
+    { 'id' => id, 'title' => title, 'canonical_url' => canonical, 'body_markdown' => body }
   end
 
   def run_publisher(client, publish: true, days: 7)
     Dir.mktmpdir do |dir|
-      feed = File.join(dir, "devto.xml")
+      feed = File.join(dir, 'devto.xml')
       File.write(feed, FEED)
       out = StringIO.new
       err = StringIO.new
@@ -58,13 +58,13 @@ class PublisherTest < Minitest::Test
     failures, out, = run_publisher(FakeClient.new([]), publish: false)
 
     assert_equal 0, failures
-    assert_includes out, "Posts live in the last 7 days: 2"
-    refute_includes out, "Old Post"
-    refute_includes out, "Scheduled"
+    assert_includes out, 'Posts live in the last 7 days: 2'
+    refute_includes out, 'Old Post'
+    refute_includes out, 'Scheduled'
   end
 
   def test_dry_run_changes_nothing
-    client = FakeClient.new([draft(1, "New Post")])
+    client = FakeClient.new([draft(1, 'New Post')])
     _, out, = run_publisher(client, publish: false)
 
     assert_includes out, %(would publish "New Post" -> dev.to draft 1)
@@ -72,11 +72,11 @@ class PublisherTest < Minitest::Test
   end
 
   def test_publishes_and_flips_the_front_matter
-    client = FakeClient.new([draft(1, "New Post", body: "---\r\ntitle: New Post\r\npublished: false\r\n---\r\n\r\npublished: false stays in the body")])
+    client = FakeClient.new([draft(1, 'New Post', body: "---\r\ntitle: New Post\r\npublished: false\r\n---\r\n\r\npublished: false stays in the body")])
     failures, out, = run_publisher(client)
 
     assert_equal 0, failures
-    assert_includes out, "sent"
+    assert_includes out, 'sent'
     id, article = client.updates.first
     assert_equal 1, id
     assert article[:published]
@@ -84,14 +84,14 @@ class PublisherTest < Minitest::Test
   end
 
   def test_matches_by_canonical_url_before_title
-    client = FakeClient.new([draft(1, "Renamed On Dev", canonical: "https://example.com/new"), draft(2, "New Post")])
+    client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)
 
     assert_equal [1], client.updates.map(&:first)
   end
 
   def test_a_rejected_post_does_not_stop_the_rest
-    client = FakeClient.new([draft(2, "Rejected & Retried"), draft(1, "New Post")], reject: [2])
+    client = FakeClient.new([draft(2, 'Rejected & Retried'), draft(1, 'New Post')], reject: [2])
     failures, _, err = run_publisher(client)
 
     assert_equal 1, failures
@@ -100,7 +100,7 @@ class PublisherTest < Minitest::Test
   end
 
   def test_a_post_left_as_a_draft_fails_the_run
-    client = FakeClient.new([draft(1, "New Post")], ignore: [1])
+    client = FakeClient.new([draft(1, 'New Post')], ignore: [1])
     failures, _, err = run_publisher(client)
 
     assert_equal 1, failures
@@ -108,7 +108,7 @@ class PublisherTest < Minitest::Test
   end
 
   def test_reports_a_missing_draft_with_the_closest_title
-    client = FakeClient.new([draft(1, "New Post!")])
+    client = FakeClient.new([draft(1, 'New Post!')])
     _, out, = run_publisher(client, publish: false)
 
     assert_includes out, %(closest draft title: "New Post!")

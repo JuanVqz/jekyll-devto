@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
-require "json"
-require "net/http"
+require 'json'
+require 'net/http'
 
 module Jekyll
   module Devto
     # Minimal dev.to (Forem) API client: the two calls the publisher needs.
     class Client
-      API = URI("https://dev.to/api/")
+      API = URI('https://dev.to/api/')
       PER_PAGE = 1000
 
       Error = Class.new(StandardError)
 
       def initialize(api_key)
-        raise Error, "DEVTO_API_KEY is not set" if api_key.to_s.empty?
+        raise Error, 'DEVTO_API_KEY is not set' if api_key.to_s.empty?
 
         @api_key = api_key
       end
@@ -35,10 +35,10 @@ module Jekyll
       def request(verb, path, body = nil)
         uri = API + path
         req = verb.new(uri)
-        req["api-key"] = @api_key
-        req["Accept"] = "application/vnd.forem.api-v1+json"
-        req["Content-Type"] = "application/json"
-        req["User-Agent"] = "jekyll-devto/#{VERSION}"
+        req['api-key'] = @api_key
+        req['Accept'] = 'application/vnd.forem.api-v1+json'
+        req['Content-Type'] = 'application/json'
+        req['User-Agent'] = "jekyll-devto/#{VERSION}"
         req.body = JSON.generate(body) if body
 
         res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(req) }
