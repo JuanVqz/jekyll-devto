@@ -4,6 +4,7 @@ require 'net/http'
 require 'rexml/document'
 require 'time'
 require_relative 'client'
+require_relative 'html'
 
 module Jekyll
   module Devto
@@ -17,7 +18,7 @@ module Jekyll
     class Publisher
       MAX_REDIRECTS = 5
 
-      Post = Struct.new(:title, :link, :date, keyword_init: true)
+      Post = Struct.new(:title, :link, :date, :code_blocks, keyword_init: true)
 
       def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
         @feed = feed
@@ -51,7 +52,7 @@ module Jekyll
 
           # One rejected post must not stop the rest, or every retry would stop at it.
           begin
-            result = @client.update(draft['id'], published: true, body_markdown: self.class.published_body(draft['body_markdown']))
+            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post))
             sent[draft['id']] = post
             @out.puts "  sent    #{post.title.inspect} -> #{result['url']}"
           rescue StandardError => e
@@ -76,12 +77,48 @@ module Jekyll
         end
       end
 
+      # The draft body to send: published, with each code fence given the
+      # language its block had on the site.
+      def self.prepared_body(markdown, post)
+        with_code_languages(published_body(markdown), post.code_blocks.to_a)
+      end
+
+      # Writes each block's language into the draft's code fence. Blocks are
+      # matched by their first line of code, not by position: dev.to does not
+      # turn every block into a fence (one inside a list item can come out
+      # unfenced), and an edited draft may not line up either. Each block is
+      # used once, in order: a fence only matches blocks after the last one
+      # matched, so a block missing from the draft cannot lend its language to
+      # a later fence that starts the same way. A fence nothing matches, or
+      # one that already names a language, is left alone.
+      def self.with_code_languages(markdown, blocks)
+        lines = markdown.to_s.lines
+        cursor = 0
+        inside = false
+        lines.each_with_index do |line, index|
+          next unless line =~ /\A\s*```[^\s`]*\s*\z/
+
+          inside = !inside
+          next unless inside && line =~ /\A\s*```\s*\z/
+
+          first = HTML.first_line(lines[(index + 1)..].take_while { |l| l !~ /\A\s*```/ }.join)
+          match = (cursor...blocks.size).find { |i| blocks[i][1] == first }
+          next unless match
+
+          cursor = match + 1
+          language = blocks[match].first
+          lines[index] = line.sub('```', "```#{language}") if language
+        end
+        lines.join
+      end
+
       def due_posts
         REXML::Document.new(read_feed).get_elements('//item').filter_map do |item|
           date = Time.rfc2822(item.elements['pubDate'].text)
           next if date > @now || date < @now - (@days * 86_400)
 
-          Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date)
+          Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date,
+                   code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text))
         end
       end
 

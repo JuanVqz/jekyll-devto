@@ -19,7 +19,7 @@ class FeedTest < Minitest::Test
   def test_carries_the_full_post
     body = item('Code & Links').elements['content:encoded'].text
 
-    assert_includes body, '<pre><code>def hello'
+    assert_includes body, '<pre data-lang="ruby"><code>def hello'
     assert_includes body, %(<a href="https://example.com/about/">link</a>)
     assert_includes body, %(<img src="https://example.com/assets/pic.png")
     assert_includes body, %(href="//cdn.example.com/x.js")
@@ -46,7 +46,7 @@ class FeedTest < Minitest::Test
   def test_highlight_tag_with_linenos_loses_its_gutter
     body = item('Code & Links').elements['content:encoded'].text
 
-    assert_includes body, "<pre><code>def tagged\n  :linenos\nend\n</code></pre>"
+    assert_includes body, %(<pre data-lang="ruby"><code>def tagged&#10;  :linenos&#10;end&#10;</code></pre>)
     refute_includes body, 'rouge-table'
   end
 
@@ -66,15 +66,35 @@ class FeedTest < Minitest::Test
     assert_equal ['Plain Post'], REXML::Document.new(custom).get_elements('//item').map { |i| i.elements['title'].text }
   end
 
-  # Replays dev.to's import: Feedjira picks `content` (content:encoded) over the
-  # summary, Forem's CleanHtml drops every class, ReverseMarkdown converts.
+  # Replays dev.to's import (Feeds::AssembleArticleMarkdown): Feedjira picks
+  # `content` (content:encoded) over the summary; the HTML is converted only
+  # when block tags outnumber blank lines (html_content?), otherwise it is
+  # stored raw; CleanHtml drops every class; ReverseMarkdown converts.
+  def dev_to_import(title)
+    content = Feedjira.parse(feed).entries.find { |e| e.title == title }.content
+    block_tags = content.scan(/<\s*(p|div|h[1-6]|ul|ol|li|blockquote|pre|table|section|figure)[\s>]/i).size
+    return content unless block_tags > content.scan(/\n\s*\n/).size
+
+    html = Nokogiri::HTML(content).tap { |doc| doc.xpath('//@class').remove }.to_html
+    ReverseMarkdown.convert(html, github_flavored: true)
+  end
+
   def test_survives_the_dev_to_import
-    entry = Feedjira.parse(feed).entries.find { |e| e.title == 'Code & Links' }
-    html = Nokogiri::HTML(entry.content).tap { |doc| doc.xpath('//@class').remove }.to_html
-    markdown = ReverseMarkdown.convert(html, github_flavored: true)
+    markdown = dev_to_import('Code & Links')
 
     assert_includes markdown, "```\ndef hello\n  puts \"hi\"\nend\n```"
     refute_match(/```\n1\n/, markdown)
     assert_includes markdown, '[link](https://example.com/about/)'
+  end
+
+  # The whole path a code block takes: feed, dev.to's import, then the
+  # publisher writing each block's language into the draft's fences.
+  def test_code_languages_reach_the_published_draft
+    content = item('Code & Links').elements['content:encoded'].text
+    published = Jekyll::Devto::Publisher.with_code_languages(dev_to_import('Code & Links'), Jekyll::Devto::HTML.code_blocks(content))
+
+    assert_includes published, "```ruby\ndef hello\n"
+    assert_includes published, "```ruby\ndef tagged\n"
+    assert_includes published, "```\n<a href=\"/raw\">plain block</a>"
   end
 end

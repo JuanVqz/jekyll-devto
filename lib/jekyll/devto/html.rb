@@ -13,12 +13,16 @@ module Jekyll
     #   up inside the code.
     # - Root-relative links and images point nowhere once the post lives on
     #   dev.to.
+    #
+    # The code language cannot travel as a class, so each block carries it as
+    # data-lang, which CleanHtml keeps. ReverseMarkdown ignores it; the
+    # publisher reads it from the feed and writes it into the draft's fences.
     module HTML
       # Kramdown block options such as {: .nolineno } or {: file="..." } add
       # classes and attributes to the wrapper, so the class is matched anywhere
       # in the tag.
       ROUGE_BLOCK = %r{
-        <div\b[^>]*\bclass="[^"]*\bhighlighter-rouge\b[^"]*"[^>]*>\s*
+        <div\b(?<attrs>[^>]*\bclass="[^"]*\bhighlighter-rouge\b[^"]*"[^>]*)>\s*
         <div\ class="highlight">\s*<pre\ class="highlight"><code>
         (?<body>.*?)
         </code></pre>\s*</div>\s*</div>
@@ -26,7 +30,7 @@ module Jekyll
 
       # What the {% highlight %} Liquid tag renders.
       HIGHLIGHT_TAG = %r{
-        <figure\ class="highlight"><pre><code\b[^>]*>
+        <figure\ class="highlight"><pre><code\b(?<attrs>[^>]*)>
         (?<body>.*?)
         </code></pre></figure>
       }mx
@@ -40,31 +44,79 @@ module Jekyll
       TAG = /<[a-zA-Z][^>]*>/
       ROOT_RELATIVE = %r{\b(src|href)="/(?!/)}
 
+      # Kramdown's name for a fence with no language.
+      NO_LANGUAGE = %w[plaintext text].freeze
+
       module_function
 
       def convert(html, base_url)
         html.to_s
-          .gsub(ROUGE_BLOCK) { plain_code(Regexp.last_match[:body]) }
-          .gsub(HIGHLIGHT_TAG) { plain_code(Regexp.last_match[:body]) }
+          .gsub(ROUGE_BLOCK) { plain_code(Regexp.last_match[:body], rouge_language(Regexp.last_match[:attrs])) }
+          .gsub(HIGHLIGHT_TAG) { plain_code(Regexp.last_match[:body], Regexp.last_match[:attrs][/\bdata-lang="([^"]+)"/, 1]) }
           .gsub(TAG) { |tag| tag.gsub(ROOT_RELATIVE, %(\\1="#{base_url.to_s.chomp('/')}/)) }
       end
 
-      # The language is not kept: dev.to strips every class before converting,
-      # so it would never arrive.
-      def plain_code(body)
-        body = Regexp.last_match[:code] if body =~ GUTTER
+      # Forem converts the HTML to Markdown only when block tags outnumber blank
+      # lines (Feeds::AssembleArticleMarkdown#html_content?); otherwise it stores
+      # the raw HTML, and none of the conversion (fences, languages) happens.
+      # Blank lines between tags are only formatting, and a newline inside code
+      # written as &#10; is the same character once parsed, so the post reads
+      # the same while the count of blank lines drops to zero.
+      def without_blank_lines(html)
+        html.split(%r{(<pre\b[^>]*>.*?</pre>)}m).map do |part|
+          part.start_with?('<pre') ? part.gsub("\n", '&#10;') : part.gsub(/\n\s*\n/, "\n")
+        end.join
+      end
 
-        "<pre><code>#{body.gsub(/<[^>]+>/, '')}</code></pre>"
+      # Kramdown writes the fence's language as a language-* class, and the
+      # language can hold any non-space character (c#, shell.session). It is
+      # read from the class attribute only, so another attribute such as
+      # file="docs/language-notes.md" cannot pass for it.
+      def rouge_language(attrs)
+        attrs[/\bclass="([^"]*)"/, 1].to_s[/(?:\A|\s)language-(\S+)/, 1]
+      end
+
+      def plain_code(body, language)
+        body = Regexp.last_match[:code] if body =~ GUTTER
+        attribute = language && !NO_LANGUAGE.include?(language) ? %( data-lang="#{language}") : ''
+
+        "<pre#{attribute}><code>#{body.gsub(/<[^>]+>/, '')}</code></pre>"
+      end
+
+      CODE_BLOCK = %r{<pre\b(?<attrs>[^>]*)><code\b[^>]*>(?<code>.*?)</code></pre>}m
+
+      # Every code block in a converted body, in order, as [language, first
+      # line of code] (language is nil when the block has none). The first line
+      # is what identifies the block in the dev.to draft, whose fences do not
+      # always line up one to one with the blocks.
+      def code_blocks(html)
+        html.to_s.scan(CODE_BLOCK).map do |attrs, code|
+          [attrs[/\bdata-lang="([^"]+)"/, 1], first_line(unescape(code))]
+        end
+      end
+
+      # Whitespace is collapsed for the comparison: some Markdown converters
+      # squeeze runs of spaces inside code.
+      def first_line(code)
+        code.to_s.each_line.map { |line| line.split.join(' ') }.find { |line| !line.empty? }.to_s
+      end
+
+      # The entities this HTML can carry inside code; enough to compare it with
+      # the Markdown dev.to stores. &amp; goes last so "&amp;lt;" stays "&lt;".
+      def unescape(text)
+        text.gsub(/&#(\d+);/) { Regexp.last_match(1).to_i.chr(Encoding::UTF_8) }
+            .gsub('&lt;', '<').gsub('&gt;', '>').gsub('&quot;', '"').gsub('&#39;', "'").gsub('&amp;', '&')
       end
     end
 
     # Liquid filter for the feed template.
     module Filters
       def devto_html(html, base_url)
-        HTML.convert(html, base_url)
+        HTML.without_blank_lines(HTML.convert(html, base_url))
       end
     end
   end
 end
 
-Liquid::Template.register_filter(Jekyll::Devto::Filters)
+# The CLI loads this file without Jekyll, only for HTML.code_blocks.
+Liquid::Template.register_filter(Jekyll::Devto::Filters) if defined?(Liquid::Template)

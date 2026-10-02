@@ -83,7 +83,8 @@ Checked against [Forem's source](https://github.com/forem/forem); the README lis
 - The import uses `<content:encoded>`, falling back to the summary (`Feeds::AssembleArticleMarkdown#get_content`).
 - Imports are always drafts, and the body's own front matter says `published: false`. That front matter wins over the API's `published` field (`Article#evaluate_front_matter`), so the publisher flips it inside the body, **only** within the front matter.
 - The PUT response has no `published` field. The publisher confirms by listing the drafts again.
-- Every `class` attribute is stripped before conversion, so a code block's language can never get through.
+- Every `class` attribute is stripped before conversion, so a code block's language cannot travel as a class. The feed carries it as `data-lang`, and the publisher writes it into the draft's fences, matching blocks by their first line of code (`HTML.code_blocks`, `Publisher.with_code_languages`).
+- The feed is converted to Markdown only when block tags outnumber blank lines (`Feeds::AssembleArticleMarkdown#html_content?`); otherwise dev.to stores the raw HTML. `HTML.without_blank_lines` keeps every post on the Markdown path. The feed tests replay that check.
 - Duplicates match on title or link, per user.
 
 If a change relies on dev.to behaving some way, read the Forem source first and name the file in the commit or comment.

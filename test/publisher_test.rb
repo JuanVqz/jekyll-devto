@@ -89,6 +89,65 @@ class PublisherTest < Minitest::Test
     assert_equal body, Jekyll::Devto::Publisher.published_body(body)
   end
 
+  def test_code_languages_are_written_into_the_fences
+    body = "---\ntitle: X\n---\n\nText\n\n```\nputs 1\n```\n\n- item\n\n  ```\n  ls\n  ```\n\n```\nplain\n```\n"
+    expected = "---\ntitle: X\n---\n\nText\n\n```ruby\nputs 1\n```\n\n- item\n\n  ```bash\n  ls\n  ```\n\n```\nplain\n```\n"
+
+    blocks = [['ruby', 'puts 1'], ['bash', 'ls'], [nil, 'plain']]
+
+    assert_equal expected, Jekyll::Devto::Publisher.with_code_languages(body, blocks)
+  end
+
+  # dev.to does not turn every block into a fence (a block inside a list item
+  # can come out unfenced), so blocks are matched by their first line of code,
+  # never by position.
+  def test_code_languages_match_by_content_when_a_block_is_missing
+    body = "```\nputs 1\n```\n\n```\necho hi\n```\n"
+    blocks = [['ruby', 'puts 1'], ['bash', 'ls -la'], ['bash', 'echo hi']]
+
+    assert_equal "```ruby\nputs 1\n```\n\n```bash\necho hi\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, blocks)
+  end
+
+  def test_code_languages_leave_an_unknown_block_alone
+    body = "```\nedited on dev.to\n```\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.with_code_languages(body, [['ruby', 'puts 1']])
+  end
+
+  def test_code_languages_ignore_squeezed_spaces
+    body = "```\nsrc/a.js test/a.js\n```\n"
+
+    assert_equal "```js\nsrc/a.js test/a.js\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, [['js', Jekyll::Devto::HTML.first_line("src/a.js      test/a.js")]])
+  end
+
+  def test_code_languages_keep_a_language_already_set
+    body = "```js\nx\n```\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.with_code_languages(body, [['ruby', 'x']])
+  end
+
+  def test_code_languages_use_each_block_once_in_order
+    body = "```\nx = 1\n```\n\n```\nx = 1\n```\n"
+    blocks = [['ruby', 'x = 1'], ['python', 'x = 1']]
+
+    assert_equal "```ruby\nx = 1\n```\n\n```python\nx = 1\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, blocks)
+  end
+
+  # A block missing from the draft must not lend its language to a later
+  # fence that starts the same way.
+  def test_code_languages_never_match_a_block_behind_the_last_match
+    body = "```\nls\n```\n\n```\nx = 1\n```\n"
+    blocks = [['ruby', 'x = 1'], ['bash', 'ls'], ['python', 'x = 1']]
+  
+    assert_equal "```bash\nls\n```\n\n```python\nx = 1\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, blocks)
+  end
+  
+  def test_code_languages_recognize_a_fence_with_any_language
+    body = "```c#\nint x;\n```\n\n```\nls\n```\n"
+  
+    assert_equal "```c#\nint x;\n```\n\n```bash\nls\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, [['bash', 'ls']])
+  end
+  
   def test_matches_by_canonical_url_before_title
     client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)
