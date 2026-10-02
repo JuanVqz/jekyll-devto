@@ -83,6 +83,16 @@ module Jekyll
         "<pre#{attribute}><code>#{body.gsub(/<[^>]+>/, '')}</code></pre>"
       end
 
+      # A post image as an absolute URL. Takes a path, a URL, or Chirpy's
+      # { "path" => ... } hash; nil when there is nothing to point at.
+      def absolute_url(value, base_url)
+        path = value.is_a?(Hash) ? value['path'] : value
+        return if path.to_s.empty?
+        return path if path.match?(%r{\Ahttps?://})
+
+        "#{base_url.to_s.chomp('/')}/#{path.sub(%r{\A/}, '')}"
+      end
+
       CODE_BLOCK = %r{<pre\b(?<attrs>[^>]*)><code\b[^>]*>(?<code>.*?)</code></pre>}m
 
       # Every code block in a converted body, in order, as [language, first
@@ -111,6 +121,10 @@ module Jekyll
 
     # Liquid filter for the feed template.
     module Filters
+      def devto_url(value, base_url)
+        HTML.absolute_url(value, base_url).to_s
+      end
+
       def devto_html(html, base_url)
         HTML.without_blank_lines(HTML.convert(html, base_url))
       end

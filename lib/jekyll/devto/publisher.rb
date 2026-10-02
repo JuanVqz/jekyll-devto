@@ -18,7 +18,7 @@ module Jekyll
     class Publisher
       MAX_REDIRECTS = 5
 
-      Post = Struct.new(:title, :link, :date, :code_blocks, keyword_init: true)
+      Post = Struct.new(:title, :link, :date, :code_blocks, :cover, keyword_init: true)
 
       def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
         @feed = feed
@@ -80,7 +80,21 @@ module Jekyll
       # The draft body to send: published, with each code fence given the
       # language its block had on the site.
       def self.prepared_body(markdown, post)
-        with_code_languages(published_body(markdown), post.code_blocks.to_a)
+        body = published_body(markdown)
+        body = with_front_matter(body, 'cover_image', post.cover) if post.cover
+        with_code_languages(body, post.code_blocks.to_a)
+      end
+
+      # Adds `key: value` to the draft's front matter, which dev.to reads on
+      # every save (Article#evaluate_front_matter: cover_image, tags, series).
+      # A key the draft already has is kept: it was set on dev.to on purpose.
+      def self.with_front_matter(markdown, key, value)
+        markdown.to_s.sub(/\A---(\r?\n).*?^---[ \t]*\r?$/m) do |front_matter|
+          next front_matter if front_matter.match?(/^#{Regexp.escape(key)}:/)
+
+          newline = Regexp.last_match(1)
+          front_matter.sub(/^---[ \t]*\r?\z/) { |closing| "#{key}: #{value}#{newline}#{closing}" }
+        end
       end
 
       # Writes each block's language into the draft's code fence. Blocks are
@@ -118,7 +132,8 @@ module Jekyll
           next if date > @now || date < @now - (@days * 86_400)
 
           Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date,
-                   code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text))
+                   code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text),
+                   cover: item.elements['devto:cover']&.text)
         end
       end
 

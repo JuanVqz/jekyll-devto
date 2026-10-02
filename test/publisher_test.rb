@@ -148,6 +148,34 @@ class PublisherTest < Minitest::Test
     assert_equal "```c#\nint x;\n```\n\n```bash\nls\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, [['bash', 'ls']])
   end
   
+  def test_cover_is_added_to_the_front_matter
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\ntitle: X\npublished: false\n---\n\nBody"
+
+    assert_equal "---\ntitle: X\npublished: true\ncover_image: https://example.com/og.png\n---\n\nBody", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  # A cover chosen on dev.to is the author's call; the feed does not replace it.
+  def test_a_cover_already_on_the_draft_is_kept
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\ntitle: X\ncover_image: https://dev.to/mine.png\n---\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  def test_cover_keeps_crlf_line_endings
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\r\ntitle: X\r\n---\r\n\r\nBody"
+
+    assert_equal "---\r\ntitle: X\r\ncover_image: https://example.com/og.png\r\n---\r\n\r\nBody", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  def test_no_cover_leaves_the_front_matter_alone
+    body = "---\r\ntitle: X\r\n---\r\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, Jekyll::Devto::Publisher::Post.new)
+  end
+
   def test_matches_by_canonical_url_before_title
     client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)

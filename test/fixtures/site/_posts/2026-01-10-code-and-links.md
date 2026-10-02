@@ -1,6 +1,8 @@
 ---
 title: "Code & Links"
 tags: [ruby, jekyll]
+image:
+  path: /assets/img/og/code-and-links.png
 ---
 
 Inline `<img src="/logo.png">`, a [link](/about/), a [protocol-relative](//cdn.example.com/x.js) one and ![pic](/assets/pic.png).

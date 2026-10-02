@@ -53,6 +53,12 @@ devto:
 
 To keep a post off dev.to, set `devto: false` in its front matter.
 
+**Cover image.** `jekyll-devto publish` gives each post a dev.to cover: `devto_cover` from the post's front matter, or else the post's `image` (a path, a URL, or `{ path: ... }`, which is what [jekyll-og-image](https://github.com/igor-alexandrov/jekyll-og-image) and Chirpy use). A cover already set on the dev.to draft is kept.
+
+```yaml
+devto_cover: /assets/img/devto-cover.png # optional
+```
+
 ## Publishing the drafts
 
 ```sh

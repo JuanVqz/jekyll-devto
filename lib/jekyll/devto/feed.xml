@@ -4,7 +4,7 @@
 {%- assign site_url = site.url -%}
 {%- assign posts = site.posts | where_exp: "post", "post.devto != false" -%}
 {%- if devto.limit %}{% assign posts = posts | slice: 0, devto.limit %}{% endif %}
-<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:devto="https://github.com/JuanVqz/jekyll-devto">
   <channel>
     <title>{{ site.title | default: site.name | xml_escape }}</title>
     <link>{{ "/" | absolute_url }}</link>
@@ -26,6 +26,11 @@
       <category>{{ tag | xml_escape }}</category>
     {%- endfor %}
       <description>{{ post.description | default: post.excerpt | strip_html | strip_newlines | truncatewords: 60 | xml_escape }}</description>
+    {%- comment -%} The dev.to cover: devto_cover, else the post image (jekyll-og-image sets it). {%- endcomment -%}
+    {%- assign cover = post.devto_cover | default: post.image | devto_url: site_url %}
+    {%- if cover != "" %}
+      <devto:cover>{{ cover | xml_escape }}</devto:cover>
+    {%- endif %}
       <content:encoded>{{ post.content | devto_html: site_url | xml_escape }}</content:encoded>
     </item>
 {%- endfor %}
