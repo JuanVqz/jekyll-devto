@@ -56,7 +56,7 @@ To keep a post off dev.to, set `devto: false` in its front matter.
 
 **Cover image.** No cover by default. Many Open Graph images, including the ones [jekyll-og-image](https://github.com/igor-alexandrov/jekyll-og-image) and Chirpy produce, already carry the post title, which dev.to shows right under the cover, and without a cover dev.to generates its own share image. To add one:
 
-- `devto_cover:` on a post sets that post's cover, and always wins. `devto_cover: false` turns it off for that post.
+- `devto_cover:` on a post sets that post's cover, and always wins. `devto_cover: true` uses the post's `image`, and `devto_cover: false` turns the cover off for that post.
 - `cover: image` under `devto:` in `_config.yml` uses each post's `image` (a path, a URL, or `{ path: ... }`) for every post, for sites whose images have no title on them.
 
 ```yaml

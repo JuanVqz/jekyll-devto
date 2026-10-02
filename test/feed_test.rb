@@ -90,6 +90,12 @@ class FeedTest < Minitest::Test
     assert_equal 'https://cdn.example.com/cover.png', cover_in(custom, 'Plain Post')
   end
 
+  def test_devto_cover_true_opts_a_post_in_with_its_image
+    custom = build_feed('defaults' => [{ 'scope' => { 'path' => '_posts/2026-01-10-code-and-links.md' }, 'values' => { 'devto_cover' => true } }])
+
+    assert_equal 'https://example.com/assets/img/og/code-and-links.png', cover_in(custom, 'Code & Links')
+  end
+
   def test_devto_cover_false_opts_a_post_out
     assert_nil cover_in(build_feed('devto' => { 'cover' => 'image' }), 'No Cover')
   end
