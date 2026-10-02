@@ -1,5 +1,8 @@
 # jekyll-devto
 
+[![Gem Version](https://badge.fury.io/rb/jekyll-devto.svg)](https://badge.fury.io/rb/jekyll-devto)
+[![CI](https://github.com/JuanVqz/jekyll-devto/actions/workflows/ci.yml/badge.svg)](https://github.com/JuanVqz/jekyll-devto/actions/workflows/ci.yml)
+
 Cross-post a Jekyll blog to [dev.to](https://dev.to), complete, through dev.to's own RSS import.
 
 dev.to can import posts from your feed, but with a typical Jekyll feed you get:
