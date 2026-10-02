@@ -133,7 +133,7 @@ module Jekyll
       def devto_list(value)
         list = case value
                when Array then value.filter_map { |item| devto_text(item) }
-               when String then value.split(/[,\s]+/)
+               when String, Numeric then value.to_s.split(/[,\s]+/)
                else []
                end
         list = list.map(&:strip).reject(&:empty?)

@@ -50,7 +50,7 @@ class FrontMatterTypesTest < Minitest::Test
       File.read(File.join(root, "_site", "devto.xml"))
     end
   end
-  
+
   def feed_with_post_value(key, value, site = {})
     feed_with_front_matter({ key => value }, site)
   end
@@ -95,6 +95,7 @@ class FrontMatterTypesTest < Minitest::Test
   def test_values_that_mean_something_still_work
     assert_includes feed_with_post_value('devto_cover', '/c.png'), '<devto:cover>https://example.com/c.png</devto:cover>'
     assert_includes feed_with_post_value('devto_tags', 'ruby rails'), '<devto:tags>ruby,rails</devto:tags>'
+    assert_includes feed_with_post_value('devto_tags', 2026), '<devto:tags>2026</devto:tags>'
     assert_includes feed_with_post_value('devto_series', 'Series'), '<devto:series>Series</devto:series>'
   end
 
