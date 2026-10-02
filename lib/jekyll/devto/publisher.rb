@@ -18,7 +18,7 @@ module Jekyll
     class Publisher
       MAX_REDIRECTS = 5
 
-      Post = Struct.new(:title, :link, :date, :code_blocks, :cover, keyword_init: true)
+      Post = Struct.new(:title, :link, :date, :code_blocks, :cover, :tags, :series, keyword_init: true)
 
       def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
         @feed = feed
@@ -82,19 +82,40 @@ module Jekyll
       def self.prepared_body(markdown, post, cover: post.cover)
         body = published_body(markdown)
         body = with_front_matter(body, 'cover_image', cover) if cover
+        body = with_front_matter(body, 'tags', devto_tags(post.tags), replace: true) if post.tags&.any?
+        body = with_front_matter(body, 'series', yaml_string(post.series)) if post.series
         with_code_languages(body, post.code_blocks.to_a)
       end
 
       # Adds `key: value` to the draft's front matter, which dev.to reads on
       # every save (Article#evaluate_front_matter: cover_image, tags, series).
-      # A key the draft already has is kept: it was set on dev.to on purpose.
-      def self.with_front_matter(markdown, key, value)
+      # A key the draft already has is kept, since it was set on dev.to on
+      # purpose, unless `replace:` says the site's value wins (devto_tags,
+      # which the author chose for dev.to explicitly).
+      def self.with_front_matter(markdown, key, value, replace: false)
+        line = /^#{Regexp.escape(key)}:.*?(?=\r?$)/
         markdown.to_s.sub(/\A---(\r?\n).*?^---[ \t]*\r?$/m) do |front_matter|
-          next front_matter if front_matter.match?(/^#{Regexp.escape(key)}:/)
-
           newline = Regexp.last_match(1)
+          if front_matter.match?(line)
+            next replace ? front_matter.sub(line) { "#{key}: #{value}" } : front_matter
+          end
+
           front_matter.sub(/^---[ \t]*\r?\z/) { |closing| "#{key}: #{value}#{newline}#{closing}" }
         end
+      end
+
+      # The cleanup dev.to's import applies to tags (Feeds::AssembleArticleMarkdown
+      # #get_tags): at most four, spaces and anything but letters and digits
+      # removed, 20 characters each. Lowercased as dev.to stores them
+      # (ActsAsTaggableOn.force_lowercase), so the dry run shows the real tags.
+      def self.devto_tags(tags)
+        tags.first(4).map { |tag| tag.delete(' ').gsub(/[^[:alnum:]]/, '')[0..19].downcase }.reject(&:empty?).join(',')
+      end
+
+      # A double-quoted YAML scalar, so a value such as "MDN: Spanish" stays a
+      # string instead of breaking the front matter. A JSON string is one.
+      def self.yaml_string(value)
+        JSON.generate(value.to_s)
       end
 
       # Writes each block's language into the draft's code fence. Blocks are
@@ -133,7 +154,9 @@ module Jekyll
 
           Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date,
                    code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text),
-                   cover: item.elements['devto:cover']&.text)
+                   cover: item.elements['devto:cover']&.text,
+                   tags: item.elements['devto:tags']&.text&.split(','),
+                   series: item.elements['devto:series']&.text)
         end
       end
 

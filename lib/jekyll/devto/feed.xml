@@ -22,7 +22,8 @@
       <link>{{ post_url }}</link>
       <guid isPermaLink="true">{{ post_url }}</guid>
       <pubDate>{{ post.date | date_to_rfc822 }}</pubDate>
-    {%- assign tags = post.tags | default: post.categories %}
+    {%- comment -%} devto_tags first, so new imports already carry the tags chosen for dev.to. {%- endcomment -%}
+    {%- assign tags = post.devto_tags | default: post.tags | default: post.categories %}
     {%- for tag in tags %}
       <category>{{ tag | xml_escape }}</category>
     {%- endfor %}
@@ -32,6 +33,12 @@
     {%- assign cover = post.devto_cover | default: post.image | devto_url: site_root %}
     {%- if cover != "" %}
       <devto:cover>{{ cover | xml_escape }}</devto:cover>
+    {%- endif %}
+    {%- if post.devto_tags %}
+      <devto:tags>{{ post.devto_tags | join: "," | xml_escape }}</devto:tags>
+    {%- endif %}
+    {%- if post.devto_series %}
+      <devto:series>{{ post.devto_series | xml_escape }}</devto:series>
     {%- endif %}
       <content:encoded>{{ post.content | devto_html: site_url | xml_escape }}</content:encoded>
     </item>

@@ -2,6 +2,7 @@
 
 require 'test_helper'
 require 'stringio'
+require 'yaml'
 
 class PublisherTest < Minitest::Test
   NOW = Time.utc(2026, 1, 12, 18)
@@ -189,6 +190,43 @@ class PublisherTest < Minitest::Test
     body = "---\r\ntitle: X\r\n---\r\n"
 
     assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, Jekyll::Devto::Publisher::Post.new)
+  end
+
+  # Tags set for dev.to in the post replace the ones the import guessed, and
+  # get the same cleanup dev.to applies: four at most, letters and digits,
+  # lowercase.
+  def test_devto_tags_replace_the_draft_tags
+    post = Jekyll::Devto::Publisher::Post.new(tags: ['ruby', 'jekyll-plugins', 'Dev To', 'rss', 'five'])
+    body = "---\ntitle: X\npublished: false\ntags: portmaster,muos\n---\n"
+
+    assert_equal "---\ntitle: X\npublished: true\ntags: ruby,jekyllplugins,devto,rss\n---\n", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  def test_devto_tags_are_added_when_the_draft_has_none
+    post = Jekyll::Devto::Publisher::Post.new(tags: ['ruby'])
+
+    assert_equal "---\ntitle: X\ntags: ruby\n---\n", Jekyll::Devto::Publisher.prepared_body("---\ntitle: X\n---\n", post)
+  end
+
+  def test_series_is_added_quoted
+    post = Jekyll::Devto::Publisher::Post.new(series: 'Jekyll: the "series"')
+
+    expected = <<~YAML
+      ---
+      title: X
+      series: "Jekyll: the \\"series\\""
+      ---
+    YAML
+
+    assert_equal expected, Jekyll::Devto::Publisher.prepared_body("---\ntitle: X\n---\n", post)
+    assert_equal 'Jekyll: the "series"', YAML.safe_load(expected.split("---")[1])['series']
+  end
+
+  def test_a_series_already_on_the_draft_is_kept
+    post = Jekyll::Devto::Publisher::Post.new(series: 'New')
+    body = "---\ntitle: X\nseries: Old\n---\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, post)
   end
 
   def test_matches_by_canonical_url_before_title

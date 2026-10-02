@@ -59,6 +59,13 @@ To keep a post off dev.to, set `devto: false` in its front matter.
 devto_cover: /assets/img/devto-cover.png # optional
 ```
 
+**Tags and series.** dev.to keeps only the first four tags, as lowercase letters and digits (`tailwind-css` becomes `tailwindcss`). `devto_tags` picks them for dev.to; it is used for the import and also replaces the tags of a draft that was already imported. `devto_series` puts the post in a dev.to series, created if it does not exist; a series already set on the draft is kept.
+
+```yaml
+devto_tags: [ruby, rails, jekyll, opensource]
+devto_series: "Rails upgrades"
+```
+
 ## Publishing the drafts
 
 ```sh
@@ -100,7 +107,7 @@ Checked against [Forem's source](https://github.com/forem/forem), the software d
   body. A plain `published: true` request leaves the post a draft.
 - **The import drops the language of every code block.** dev.to removes every `class` attribute before converting (`Feeds::CleanHtml`), so a fence never gets a language from the feed. The feed marks each block with `data-lang`, which survives, and `jekyll-devto publish` writes that language into the draft's fences, matching blocks by their first line of code.
 - **Sometimes the import keeps the raw HTML instead of Markdown.** dev.to converts the feed only when block tags outnumber blank lines (`Feeds::AssembleArticleMarkdown#html_content?`). The feed removes blank lines between tags and writes newlines inside code as `&#10;`, so every post takes the Markdown path. Drafts imported before this change may still be raw HTML; their code keeps no language.
-- **Only the first four tags are kept**, stripped to letters and digits.
+- **Only the first four tags are kept**, stripped to letters and digits and lowercased. Use `devto_tags` to choose them.
 - **"Replace self-referential links with DEV-specific links"** rewrites links between your posts to
   their dev.to articles at import time, drafts included. Publish the linked post first, or leave
   that option off.
