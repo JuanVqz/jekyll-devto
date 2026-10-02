@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.1.0...v0.2.0) (2026-10-02)
+
+
+### Features
+
+* choose dev.to tags and series from the post's front matter ([#13](https://github.com/JuanVqz/jekyll-devto/issues/13)) ([1aa48f7](https://github.com/JuanVqz/jekyll-devto/commit/1aa48f7a362781f660a54d6e041f043db5a11eb8))
+* **html:** bring code block languages to dev.to ([#11](https://github.com/JuanVqz/jekyll-devto/issues/11)) ([2e62edb](https://github.com/JuanVqz/jekyll-devto/commit/2e62edb47809cc945af3988973e6c44ad9fe2a27))
+* **publisher:** use the post image as the dev.to cover ([#12](https://github.com/JuanVqz/jekyll-devto/issues/12)) ([90707e7](https://github.com/JuanVqz/jekyll-devto/commit/90707e71fbaa5d309bed29ddc455c04bea07237d))
+
+
+### Documentation
+
+* add gem version and CI badges to the README ([#8](https://github.com/JuanVqz/jekyll-devto/issues/8)) ([a0d2a9c](https://github.com/JuanVqz/jekyll-devto/commit/a0d2a9c47a871597bd4d3f4c1ac113c18b41a323))
+
 ## 0.1.0 (2026-10-01)
 
 
