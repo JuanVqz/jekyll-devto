@@ -49,15 +49,21 @@ All optional.
 devto:
   path: "/devto.xml" # where the feed is written
   limit: 20          # newest posts to include (default: all)
+  cover: image       # use each post's image as its dev.to cover (default: no cover)
 ```
 
 To keep a post off dev.to, set `devto: false` in its front matter.
 
-**Cover image.** `jekyll-devto publish` gives each post a dev.to cover: `devto_cover` from the post's front matter, or else the post's `image` (a path, a URL, or `{ path: ... }`, which is what [jekyll-og-image](https://github.com/igor-alexandrov/jekyll-og-image) and Chirpy use). A cover already set on the dev.to draft is kept.
+**Cover image.** No cover by default. Many Open Graph images, including the ones [jekyll-og-image](https://github.com/igor-alexandrov/jekyll-og-image) and Chirpy produce, already carry the post title, which dev.to shows right under the cover, and without a cover dev.to generates its own share image. To add one:
+
+- `devto_cover:` on a post sets that post's cover, and always wins. `devto_cover: false` turns it off for that post.
+- `cover: image` under `devto:` in `_config.yml` uses each post's `image` (a path, a URL, or `{ path: ... }`) for every post, for sites whose images have no title on them.
 
 ```yaml
-devto_cover: /assets/img/devto-cover.png # optional
+devto_cover: /assets/img/devto-cover.png # optional, per post
 ```
+
+`jekyll-devto publish` adds the cover to the draft; a cover already set on the dev.to draft is kept. dev.to crops covers to 1000×420.
 
 **Tags and series.** dev.to keeps only the first four tags, as lowercase letters and digits (`tailwind-css` becomes `tailwindcss`). `devto_tags` picks them for dev.to; it is used for the import and also replaces the tags of a draft that was already imported. `devto_series` puts the post in a dev.to series, created if it does not exist; a series already set on the draft is kept.
 
