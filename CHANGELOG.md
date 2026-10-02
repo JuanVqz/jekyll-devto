@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/JuanVqz/jekyll-devto/compare/v0.3.0...v0.3.1) (2026-10-02)
+
+
+### Bug Fixes
+
+* **feed:** ignore front matter values of the wrong type instead of crashing ([#16](https://github.com/JuanVqz/jekyll-devto/issues/16)) ([a890385](https://github.com/JuanVqz/jekyll-devto/commit/a890385ad4427fb2875f78e723d4f750eadcfb6b))
+
 ## [0.3.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.2.0...v0.3.0) (2026-10-02)
 
 
