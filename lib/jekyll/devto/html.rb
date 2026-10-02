@@ -122,6 +122,15 @@ module Jekyll
 
     # Liquid filter for the feed template.
     module Filters
+      # devto_tags as a list, whether the front matter wrote a YAML list or a
+      # string ("ruby, rails" or "ruby rails", as Jekyll accepts for tags), so
+      # the import and the publisher see the same tags. nil when there are none.
+      def devto_list(value)
+        list = value.is_a?(Array) ? value.map(&:to_s) : value.to_s.split(/[,\s]+/)
+        list = list.map(&:strip).reject(&:empty?)
+        list unless list.empty?
+      end
+
       def devto_url(value, base_url)
         HTML.absolute_url(value, base_url).to_s
       end

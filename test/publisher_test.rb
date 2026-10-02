@@ -202,6 +202,22 @@ class PublisherTest < Minitest::Test
     assert_equal "---\ntitle: X\npublished: true\ntags: ruby,jekyllplugins,devto,rss\n---\n", Jekyll::Devto::Publisher.prepared_body(body, post)
   end
 
+  # A tags list written as a YAML block (edited on dev.to) is replaced whole,
+  # not left behind as a continuation of the new value.
+  def test_devto_tags_replace_a_block_list
+    post = Jekyll::Devto::Publisher::Post.new(tags: ['ruby'])
+    body = "---\ntitle: X\ntags:\n  - portmaster\n- muos\nseries: S\n---\n"
+
+    assert_equal "---\ntitle: X\ntags: ruby\nseries: S\n---\n", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  def test_devto_tags_that_clean_to_nothing_keep_the_draft_tags
+    post = Jekyll::Devto::Publisher::Post.new(tags: ['++'])
+    body = "---\ntitle: X\ntags: ruby\n---\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
   def test_devto_tags_are_added_when_the_draft_has_none
     post = Jekyll::Devto::Publisher::Post.new(tags: ['ruby'])
 

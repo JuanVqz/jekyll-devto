@@ -82,7 +82,8 @@ module Jekyll
       def self.prepared_body(markdown, post, cover: post.cover)
         body = published_body(markdown)
         body = with_front_matter(body, 'cover_image', cover) if cover
-        body = with_front_matter(body, 'tags', devto_tags(post.tags), replace: true) if post.tags&.any?
+        tags = devto_tags(post.tags.to_a)
+        body = with_front_matter(body, 'tags', tags, replace: true) unless tags.empty?
         body = with_front_matter(body, 'series', yaml_string(post.series)) if post.series
         with_code_languages(body, post.code_blocks.to_a)
       end
@@ -93,7 +94,9 @@ module Jekyll
       # purpose, unless `replace:` says the site's value wins (devto_tags,
       # which the author chose for dev.to explicitly).
       def self.with_front_matter(markdown, key, value, replace: false)
-        line = /^#{Regexp.escape(key)}:.*?(?=\r?$)/
+        # The key line plus any continuation lines (an indented or "- " list), so
+        # a replaced block list does not leave its items behind.
+        line = /^#{Regexp.escape(key)}:[^\r\n]*(?:\r?\n(?:[ \t]|-(?=[ \t\r\n]))[^\r\n]*)*/
         markdown.to_s.sub(/\A---(\r?\n).*?^---[ \t]*\r?$/m) do |front_matter|
           newline = Regexp.last_match(1)
           if front_matter.match?(line)
