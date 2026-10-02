@@ -2,6 +2,7 @@
 {%- assign devto = site.devto | default: empty -%}
 {%- comment -%} Not site.url + baseurl: links in content already carry baseurl (relative_url adds it). {%- endcomment -%}
 {%- assign site_url = site.url -%}
+{%- assign site_root = site.url | append: site.baseurl -%}
 {%- assign posts = site.posts | where_exp: "post", "post.devto != false" -%}
 {%- if devto.limit %}{% assign posts = posts | slice: 0, devto.limit %}{% endif %}
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:devto="https://github.com/JuanVqz/jekyll-devto">
@@ -27,7 +28,8 @@
     {%- endfor %}
       <description>{{ post.description | default: post.excerpt | strip_html | strip_newlines | truncatewords: 60 | xml_escape }}</description>
     {%- comment -%} The dev.to cover: devto_cover, else the post image (jekyll-og-image sets it). {%- endcomment -%}
-    {%- assign cover = post.devto_cover | default: post.image | devto_url: site_url %}
+    {%- comment -%} Unlike content links, image paths leave baseurl out (Chirpy and jekyll-og-image add it when rendering). {%- endcomment -%}
+    {%- assign cover = post.devto_cover | default: post.image | devto_url: site_root %}
     {%- if cover != "" %}
       <devto:cover>{{ cover | xml_escape }}</devto:cover>
     {%- endif %}

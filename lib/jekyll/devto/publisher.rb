@@ -52,7 +52,7 @@ module Jekyll
 
           # One rejected post must not stop the rest, or every retry would stop at it.
           begin
-            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post))
+            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post, cover: new_cover(draft, post)))
             sent[draft['id']] = post
             @out.puts "  sent    #{post.title.inspect} -> #{result['url']}"
           rescue StandardError => e
@@ -79,9 +79,9 @@ module Jekyll
 
       # The draft body to send: published, with each code fence given the
       # language its block had on the site.
-      def self.prepared_body(markdown, post)
+      def self.prepared_body(markdown, post, cover: post.cover)
         body = published_body(markdown)
-        body = with_front_matter(body, 'cover_image', post.cover) if post.cover
+        body = with_front_matter(body, 'cover_image', cover) if cover
         with_code_languages(body, post.code_blocks.to_a)
       end
 
@@ -138,6 +138,14 @@ module Jekyll
       end
 
       private
+
+      # A cover chosen in dev.to's editor lives in the article (main_image),
+      # not in the body's front matter, and a cover_image key in the front
+      # matter would replace it (Article#set_main_image). The API reports it
+      # as cover_image, so a draft that has one is left with it.
+      def new_cover(draft, post)
+        post.cover if draft['cover_image'].to_s.empty?
+      end
 
       # Follows redirects (http to https, apex to www), which Net::HTTP does not.
       def read_feed

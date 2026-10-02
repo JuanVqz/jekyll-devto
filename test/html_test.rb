@@ -125,6 +125,7 @@ class HTMLTest < Minitest::Test
     assert_equal 'https://example.com/b.png', Jekyll::Devto::HTML.absolute_url({ 'path' => '/b.png' }, BASE)
     assert_equal 'https://cdn.example.com/c.png', Jekyll::Devto::HTML.absolute_url('https://cdn.example.com/c.png', BASE)
     assert_equal 'https://example.com/d.png', Jekyll::Devto::HTML.absolute_url('d.png', "#{BASE}/")
+    assert_equal 'https://cdn.example.com/e.png', Jekyll::Devto::HTML.absolute_url('//cdn.example.com/e.png', BASE)
     assert_nil Jekyll::Devto::HTML.absolute_url(nil, BASE)
     assert_nil Jekyll::Devto::HTML.absolute_url({ 'alt' => 'no path' }, BASE)
   end

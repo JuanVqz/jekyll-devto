@@ -89,6 +89,7 @@ module Jekyll
         path = value.is_a?(Hash) ? value['path'] : value
         return if path.to_s.empty?
         return path if path.match?(%r{\Ahttps?://})
+        return "#{base_url.to_s[/\A[a-z][a-z0-9+.-]*:/i] || 'https:'}#{path}" if path.start_with?('//')
 
         "#{base_url.to_s.chomp('/')}/#{path.sub(%r{\A/}, '')}"
       end
