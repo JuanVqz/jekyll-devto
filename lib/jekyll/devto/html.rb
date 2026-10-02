@@ -51,7 +51,7 @@ module Jekyll
 
       def convert(html, base_url)
         html.to_s
-          .gsub(ROUGE_BLOCK) { plain_code(Regexp.last_match[:body], Regexp.last_match[:attrs][/\blanguage-([\w+-]+)/, 1]) }
+          .gsub(ROUGE_BLOCK) { plain_code(Regexp.last_match[:body], rouge_language(Regexp.last_match[:attrs])) }
           .gsub(HIGHLIGHT_TAG) { plain_code(Regexp.last_match[:body], Regexp.last_match[:attrs][/\bdata-lang="([^"]+)"/, 1]) }
           .gsub(TAG) { |tag| tag.gsub(ROOT_RELATIVE, %(\\1="#{base_url.to_s.chomp('/')}/)) }
       end
@@ -66,6 +66,14 @@ module Jekyll
         html.split(%r{(<pre\b[^>]*>.*?</pre>)}m).map do |part|
           part.start_with?('<pre') ? part.gsub("\n", '&#10;') : part.gsub(/\n\s*\n/, "\n")
         end.join
+      end
+
+      # Kramdown writes the fence's language as a language-* class, and the
+      # language can hold any non-space character (c#, shell.session). It is
+      # read from the class attribute only, so another attribute such as
+      # file="docs/language-notes.md" cannot pass for it.
+      def rouge_language(attrs)
+        attrs[/\bclass="([^"]*)"/, 1].to_s[/(?:\A|\s)language-(\S+)/, 1]
       end
 
       def plain_code(body, language)

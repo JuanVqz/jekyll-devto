@@ -81,6 +81,18 @@ class HTMLTest < Minitest::Test
     assert_equal "<pre><code>x\n</code></pre>", convert(html)
   end
 
+  def test_language_keeps_any_non_space_character
+    html = %(<div class="language-c# highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x\n</code></pre></div></div>)
+  
+    assert_equal %(<pre data-lang="c#"><code>x\n</code></pre>), convert(html)
+  end
+  
+  def test_language_comes_from_the_class_attribute_only
+    html = %(<div file="docs/language-notes.md" class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x\n</code></pre></div></div>)
+  
+    assert_equal %(<pre data-lang="ruby"><code>x\n</code></pre>), convert(html)
+  end
+  
   def test_code_blocks_list_language_and_first_line_in_order
     html = %(<pre data-lang="ruby"><code>\n  a = 1&#10;b</code></pre><p>x</p><pre><code>c &amp;&amp; d&#10;</code></pre><pre data-lang="bash"><code>echo &quot;hi&quot; &gt; f</code></pre>)
 

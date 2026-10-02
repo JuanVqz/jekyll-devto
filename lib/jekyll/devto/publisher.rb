@@ -87,22 +87,26 @@ module Jekyll
       # matched by their first line of code, not by position: dev.to does not
       # turn every block into a fence (one inside a list item can come out
       # unfenced), and an edited draft may not line up either. Each block is
-      # used once, in order; a fence nothing matches, or one that already
-      # names a language, is left alone.
+      # used once, in order: a fence only matches blocks after the last one
+      # matched, so a block missing from the draft cannot lend its language to
+      # a later fence that starts the same way. A fence nothing matches, or
+      # one that already names a language, is left alone.
       def self.with_code_languages(markdown, blocks)
         lines = markdown.to_s.lines
-        remaining = blocks.dup
+        cursor = 0
         inside = false
         lines.each_with_index do |line, index|
-          next unless line =~ /\A\s*```[\w+-]*\s*\z/
+          next unless line =~ /\A\s*```[^\s`]*\s*\z/
 
           inside = !inside
           next unless inside && line =~ /\A\s*```\s*\z/
 
-          match = remaining.index { |(_, first)| first == HTML.first_line(lines[(index + 1)..].take_while { |l| l !~ /\A\s*```/ }.join) }
+          first = HTML.first_line(lines[(index + 1)..].take_while { |l| l !~ /\A\s*```/ }.join)
+          match = (cursor...blocks.size).find { |i| blocks[i][1] == first }
           next unless match
 
-          language = remaining.delete_at(match).first
+          cursor = match + 1
+          language = blocks[match].first
           lines[index] = line.sub('```', "```#{language}") if language
         end
         lines.join

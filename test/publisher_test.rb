@@ -133,6 +133,21 @@ class PublisherTest < Minitest::Test
     assert_equal "```ruby\nx = 1\n```\n\n```python\nx = 1\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, blocks)
   end
 
+  # A block missing from the draft must not lend its language to a later
+  # fence that starts the same way.
+  def test_code_languages_never_match_a_block_behind_the_last_match
+    body = "```\nls\n```\n\n```\nx = 1\n```\n"
+    blocks = [['ruby', 'x = 1'], ['bash', 'ls'], ['python', 'x = 1']]
+  
+    assert_equal "```bash\nls\n```\n\n```python\nx = 1\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, blocks)
+  end
+  
+  def test_code_languages_recognize_a_fence_with_any_language
+    body = "```c#\nint x;\n```\n\n```\nls\n```\n"
+  
+    assert_equal "```c#\nint x;\n```\n\n```bash\nls\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, [['bash', 'ls']])
+  end
+  
   def test_matches_by_canonical_url_before_title
     client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)
