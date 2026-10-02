@@ -1,6 +1,8 @@
 ---
 title: "Code & Links"
 tags: [ruby, jekyll]
+devto_tags: [ruby, jekyll-plugins, Dev To, rss, five]
+devto_series: "Jekyll: the series"
 image:
   path: /assets/img/og/code-and-links.png
 ---

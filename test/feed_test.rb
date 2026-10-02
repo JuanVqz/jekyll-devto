@@ -33,9 +33,17 @@ class FeedTest < Minitest::Test
     assert_includes body, %(&lt;a href="/raw"&gt;plain block&lt;/a&gt;)
   end
 
-  def test_uses_tags_then_categories
-    assert_equal %w[ruby jekyll], item('Code & Links').get_elements('category').map(&:text)
+  # devto_tags wins so new imports already carry the tags chosen for dev.to.
+  def test_uses_devto_tags_then_tags_then_categories
+    assert_equal ['ruby', 'jekyll-plugins', 'Dev To', 'rss', 'five'], item('Code & Links').get_elements('category').map(&:text)
     assert_equal %w[notes], item('Plain Post').get_elements('category').map(&:text)
+  end
+
+  def test_devto_tags_and_series_are_carried_for_the_publisher
+    assert_equal 'ruby,jekyll-plugins,Dev To,rss,five', item('Code & Links').elements['devto:tags'].text
+    assert_equal 'Jekyll: the series', item('Code & Links').elements['devto:series'].text
+    assert_nil item('Plain Post').elements['devto:tags']
+    assert_nil item('Plain Post').elements['devto:series']
   end
 
   def test_links_and_self_reference

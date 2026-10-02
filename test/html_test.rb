@@ -130,6 +130,16 @@ class HTMLTest < Minitest::Test
     assert_nil Jekyll::Devto::HTML.absolute_url({ 'alt' => 'no path' }, BASE)
   end
 
+  def test_devto_list_accepts_a_list_or_a_string
+    filters = Object.new.extend(Jekyll::Devto::Filters)
+
+    assert_equal %w[ruby rails], filters.devto_list(['ruby', ' rails '])
+    assert_equal %w[ruby rails jekyll], filters.devto_list('ruby, rails jekyll')
+    assert_nil filters.devto_list(nil)
+    assert_nil filters.devto_list([])
+    assert_nil filters.devto_list(' , ')
+  end
+
   def test_base_url_with_a_trailing_slash
     assert_equal %(<a href="https://example.com/x">x</a>), Jekyll::Devto::HTML.convert(%(<a href="/x">x</a>), "#{BASE}/")
   end
