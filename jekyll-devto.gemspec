@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = 'jekyll-devto'
   spec.version = Jekyll::Devto::VERSION
   spec.authors = ['Juan Vásquez']
-  spec.email = ['juan@ombulabs.com']
+  spec.email = ['hello@juanvasquez.dev']
 
   spec.summary = 'Cross-post a Jekyll blog to dev.to, complete, through its RSS import.'
   spec.description = <<~DESC
