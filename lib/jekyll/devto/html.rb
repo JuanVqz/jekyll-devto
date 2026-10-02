@@ -87,7 +87,12 @@ module Jekyll
       # { "path" => ... } hash; nil when there is nothing to point at.
       def absolute_url(value, base_url)
         path = value.is_a?(Hash) ? value['path'] : value
-        return if path.to_s.empty?
+        # Front matter is YAML, so this can be true, a number or a list; only a
+        # string is a path, anything else is ignored rather than crashing the build.
+        return unless path.is_a?(String)
+
+        path = path.strip
+        return if path.empty?
         return path if path.match?(%r{\Ahttps?://})
         return "#{base_url.to_s[/\A[a-z][a-z0-9+.-]*:/i] || 'https:'}#{path}" if path.start_with?('//')
 
@@ -126,9 +131,20 @@ module Jekyll
       # string ("ruby, rails" or "ruby rails", as Jekyll accepts for tags), so
       # the import and the publisher see the same tags. nil when there are none.
       def devto_list(value)
-        list = value.is_a?(Array) ? value.map(&:to_s) : value.to_s.split(/[,\s]+/)
+        list = case value
+               when Array then value.filter_map { |item| devto_text(item) }
+               when String then value.split(/[,\s]+/)
+               else []
+               end
         list = list.map(&:strip).reject(&:empty?)
         list unless list.empty?
+      end
+
+      # A front matter value as text when it is one (a string or a number);
+      # nil for true, false, lists and hashes, which mean nothing as a name.
+      def devto_text(value)
+        text = value.to_s.strip if value.is_a?(String) || value.is_a?(Numeric)
+        text unless text.to_s.empty?
       end
 
       def devto_url(value, base_url)
