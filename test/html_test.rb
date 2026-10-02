@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'test_helper'
+require 'nokogiri'
 
 class HTMLTest < Minitest::Test
   BASE = 'https://example.com'
@@ -16,25 +17,25 @@ class HTMLTest < Minitest::Test
       </pre></td></tr></tbody></table></code></pre></div></div>
     HTML
 
-    assert_equal "<pre><code>def x\nend\n</code></pre>", convert(html)
+    assert_equal %(<pre data-lang="ruby"><code>def x\nend\n</code></pre>), convert(html)
   end
 
   def test_unwraps_a_block_without_a_gutter
     html = %(<div class="language-git highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git log\n</code></pre></div></div>)
 
-    assert_equal "<pre><code>git log\n</code></pre>", convert(html)
+    assert_equal %(<pre data-lang="git"><code>git log\n</code></pre>), convert(html)
   end
 
   def test_matches_a_wrapper_with_extra_classes_attributes_and_whitespace
     html = %(<div file="a.rb" class="language-ruby nolineno highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x\n</code></pre></div>    </div>)
 
-    assert_equal "<pre><code>x\n</code></pre>", convert(html)
+    assert_equal %(<pre data-lang="ruby"><code>x\n</code></pre>), convert(html)
   end
 
   def test_keeps_escaped_entities_in_code
     html = %(<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">"/x"</span><span class="nt">&gt;</span>\n</code></pre></div></div>)
 
-    assert_equal %(<pre><code>&lt;a href="/x"&gt;\n</code></pre>), convert(html)
+    assert_equal %(<pre data-lang="html"><code>&lt;a href="/x"&gt;\n</code></pre>), convert(html)
   end
 
   def test_makes_root_relative_links_and_images_absolute
@@ -64,13 +65,47 @@ class HTMLTest < Minitest::Test
       </pre></td></tr></tbody></table></code></pre></figure>
     HTML
 
-    assert_equal "<pre><code>def x\nend\n</code></pre>", convert(html)
+    assert_equal %(<pre data-lang="ruby"><code>def x\nend\n</code></pre>), convert(html)
   end
 
   def test_unwraps_a_highlight_tag_without_linenos
     html = %(<figure class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span class="nb">puts</span> <span class="s2">"x"</span></code></pre></figure>)
 
-    assert_equal %(<pre><code>puts "x"</code></pre>), convert(html)
+    assert_equal %(<pre data-lang="ruby"><code>puts "x"</code></pre>), convert(html)
+  end
+
+  # plaintext is what Kramdown calls a fence with no language.
+  def test_plaintext_blocks_get_no_language
+    html = %(<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>x\n</code></pre></div></div>)
+
+    assert_equal "<pre><code>x\n</code></pre>", convert(html)
+  end
+
+  def test_code_blocks_list_language_and_first_line_in_order
+    html = %(<pre data-lang="ruby"><code>\n  a = 1&#10;b</code></pre><p>x</p><pre><code>c &amp;&amp; d&#10;</code></pre><pre data-lang="bash"><code>echo &quot;hi&quot; &gt; f</code></pre>)
+
+    assert_equal [['ruby', 'a = 1'], [nil, 'c && d'], ['bash', 'echo "hi" > f']], Jekyll::Devto::HTML.code_blocks(html)
+  end
+
+  # Forem converts the feed HTML to Markdown only when block tags outnumber
+  # blank lines (Feeds::AssembleArticleMarkdown#html_content?); otherwise it
+  # stores the raw HTML and skips CleanHtml and the code conversion.
+  def forem_converts?(content)
+    block_tags = content.scan(/<\s*(p|div|h[1-6]|ul|ol|li|blockquote|pre|table|section|figure)[\s>]/i).size
+    block_tags.positive? && block_tags > content.scan(/\n\s*\n/).size
+  end
+
+  def test_output_always_takes_forems_markdown_path
+    html = "<p>One</p>\n\n<p>Two</p>\n\n<pre><code>a\n\n\nb\n</code></pre>\n\n<p>Three</p>\n"
+
+    refute forem_converts?(html)
+    assert forem_converts?(Jekyll::Devto::HTML.without_blank_lines(convert(html)))
+  end
+
+  def test_code_keeps_its_blank_lines_once_parsed
+    html = %(<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code>a\n\nb\n</code></pre></div></div>)
+
+    assert_equal "a\n\nb\n", Nokogiri::HTML(Jekyll::Devto::HTML.without_blank_lines(convert(html))).at('code').text
   end
 
   def test_base_url_with_a_trailing_slash

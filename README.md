@@ -92,8 +92,8 @@ Checked against [Forem's source](https://github.com/forem/forem), the software d
 - **The imported body says `published: false` in its own front matter**, and that wins over the
   API's `published` field (`Article#evaluate_front_matter`). The publish command flips it inside the
   body. A plain `published: true` request leaves the post a draft.
-- **Code blocks arrive without a language.** dev.to removes every `class` attribute before
-  converting (`Feeds::CleanHtml`), so syntax highlighting is lost on import whatever the feed says.
+- **The import drops the language of every code block.** dev.to removes every `class` attribute before converting (`Feeds::CleanHtml`), so a fence never gets a language from the feed. The feed marks each block with `data-lang`, which survives, and `jekyll-devto publish` writes that language into the draft's fences, matching blocks by their first line of code.
+- **Sometimes the import keeps the raw HTML instead of Markdown.** dev.to converts the feed only when block tags outnumber blank lines (`Feeds::AssembleArticleMarkdown#html_content?`). The feed removes blank lines between tags and writes newlines inside code as `&#10;`, so every post takes the Markdown path. Drafts imported before this change may still be raw HTML; their code keeps no language.
 - **Only the first four tags are kept**, stripped to letters and digits.
 - **"Replace self-referential links with DEV-specific links"** rewrites links between your posts to
   their dev.to articles at import time, drafts included. Publish the linked post first, or leave
