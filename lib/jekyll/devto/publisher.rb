@@ -18,7 +18,7 @@ module Jekyll
     class Publisher
       MAX_REDIRECTS = 5
 
-      Post = Struct.new(:title, :link, :date, :code_blocks, keyword_init: true)
+      Post = Struct.new(:title, :link, :date, :code_blocks, :cover, keyword_init: true)
 
       def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
         @feed = feed
@@ -52,7 +52,7 @@ module Jekyll
 
           # One rejected post must not stop the rest, or every retry would stop at it.
           begin
-            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post))
+            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post, cover: new_cover(draft, post)))
             sent[draft['id']] = post
             @out.puts "  sent    #{post.title.inspect} -> #{result['url']}"
           rescue StandardError => e
@@ -79,8 +79,22 @@ module Jekyll
 
       # The draft body to send: published, with each code fence given the
       # language its block had on the site.
-      def self.prepared_body(markdown, post)
-        with_code_languages(published_body(markdown), post.code_blocks.to_a)
+      def self.prepared_body(markdown, post, cover: post.cover)
+        body = published_body(markdown)
+        body = with_front_matter(body, 'cover_image', cover) if cover
+        with_code_languages(body, post.code_blocks.to_a)
+      end
+
+      # Adds `key: value` to the draft's front matter, which dev.to reads on
+      # every save (Article#evaluate_front_matter: cover_image, tags, series).
+      # A key the draft already has is kept: it was set on dev.to on purpose.
+      def self.with_front_matter(markdown, key, value)
+        markdown.to_s.sub(/\A---(\r?\n).*?^---[ \t]*\r?$/m) do |front_matter|
+          next front_matter if front_matter.match?(/^#{Regexp.escape(key)}:/)
+
+          newline = Regexp.last_match(1)
+          front_matter.sub(/^---[ \t]*\r?\z/) { |closing| "#{key}: #{value}#{newline}#{closing}" }
+        end
       end
 
       # Writes each block's language into the draft's code fence. Blocks are
@@ -118,11 +132,20 @@ module Jekyll
           next if date > @now || date < @now - (@days * 86_400)
 
           Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date,
-                   code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text))
+                   code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text),
+                   cover: item.elements['devto:cover']&.text)
         end
       end
 
       private
+
+      # A cover chosen in dev.to's editor lives in the article (main_image),
+      # not in the body's front matter, and a cover_image key in the front
+      # matter would replace it (Article#set_main_image). The API reports it
+      # as cover_image, so a draft that has one is left with it.
+      def new_cover(draft, post)
+        post.cover if draft['cover_image'].to_s.empty?
+      end
 
       # Follows redirects (http to https, apex to www), which Net::HTTP does not.
       def read_feed

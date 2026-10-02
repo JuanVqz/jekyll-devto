@@ -60,6 +60,23 @@ class FeedTest < Minitest::Test
     refute_includes body, '/blog/blog/'
   end
 
+  def test_cover_is_the_post_image_made_absolute
+    assert_equal 'https://example.com/assets/img/og/code-and-links.png', item('Code & Links').elements['devto:cover'].text
+  end
+
+  # Image paths leave baseurl out (Chirpy and jekyll-og-image add it when
+  # rendering), so the cover needs it, unlike content links.
+  def test_cover_carries_the_baseurl
+    custom = build_feed('baseurl' => '/blog')
+    cover = REXML::Document.new(custom).get_elements('//item').find { |i| i.elements['title'].text == 'Code & Links' }.elements['devto:cover'].text
+
+    assert_equal 'https://example.com/blog/assets/img/og/code-and-links.png', cover
+  end
+
+  def test_devto_cover_wins_over_the_post_image
+    assert_equal 'https://cdn.example.com/cover.png', item('Plain Post').elements['devto:cover'].text
+  end
+
   def test_limit_and_path_are_configurable
     custom = build_feed('devto' => { 'path' => '/feeds/dev.xml', 'limit' => 1 })
 

@@ -43,10 +43,11 @@ class PublisherTest < Minitest::Test
     { 'id' => id, 'title' => title, 'canonical_url' => canonical, 'body_markdown' => body }
   end
 
-  def run_publisher(client, publish: true, days: 7)
+  def run_publisher(client, publish: true, days: 7, feed: FEED)
     Dir.mktmpdir do |dir|
+      xml = feed
       feed = File.join(dir, 'devto.xml')
-      File.write(feed, FEED)
+      File.write(feed, xml)
       out = StringIO.new
       err = StringIO.new
       failures = Jekyll::Devto::Publisher.new(feed: feed, client: client, days: days, publish: publish, now: NOW, out: out, err: err).run
@@ -148,6 +149,48 @@ class PublisherTest < Minitest::Test
     assert_equal "```c#\nint x;\n```\n\n```bash\nls\n```\n", Jekyll::Devto::Publisher.with_code_languages(body, [['bash', 'ls']])
   end
   
+  def test_cover_is_added_to_the_front_matter
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\ntitle: X\npublished: false\n---\n\nBody"
+
+    assert_equal "---\ntitle: X\npublished: true\ncover_image: https://example.com/og.png\n---\n\nBody", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  # A cover chosen on dev.to is the author's call; the feed does not replace it.
+  def test_a_cover_already_on_the_draft_is_kept
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\ntitle: X\ncover_image: https://dev.to/mine.png\n---\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  def test_cover_keeps_crlf_line_endings
+    post = Jekyll::Devto::Publisher::Post.new(cover: 'https://example.com/og.png')
+    body = "---\r\ntitle: X\r\n---\r\n\r\nBody"
+
+    assert_equal "---\r\ntitle: X\r\ncover_image: https://example.com/og.png\r\n---\r\n\r\nBody", Jekyll::Devto::Publisher.prepared_body(body, post)
+  end
+
+  # A cover picked in dev.to's editor is not in the front matter; the API
+  # reports it as cover_image, and adding the key would replace it.
+  def test_a_cover_set_in_the_dev_to_editor_is_kept
+    feed = FEED.sub('<rss version="2.0">', '<rss version="2.0" xmlns:devto="https://github.com/JuanVqz/jekyll-devto">')
+               .sub('</pubDate></item>', '</pubDate><devto:cover>https://example.com/og.png</devto:cover></item>')
+    with_cover = FakeClient.new([draft(1, 'New Post')])
+    run_publisher(with_cover, feed: feed)
+    editor_cover = FakeClient.new([draft(1, 'New Post').merge('cover_image' => 'https://media.dev.to/mine.png')])
+    run_publisher(editor_cover, feed: feed)
+
+    assert_includes with_cover.updates.first[1][:body_markdown], 'cover_image: https://example.com/og.png'
+    refute_includes editor_cover.updates.first[1][:body_markdown], 'cover_image'
+  end
+
+  def test_no_cover_leaves_the_front_matter_alone
+    body = "---\r\ntitle: X\r\n---\r\n"
+
+    assert_equal body, Jekyll::Devto::Publisher.prepared_body(body, Jekyll::Devto::Publisher::Post.new)
+  end
+
   def test_matches_by_canonical_url_before_title
     client = FakeClient.new([draft(1, 'Renamed On Dev', canonical: 'https://example.com/new'), draft(2, 'New Post')])
     run_publisher(client)

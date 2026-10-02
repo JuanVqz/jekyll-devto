@@ -120,6 +120,16 @@ class HTMLTest < Minitest::Test
     assert_equal "a\n\nb\n", Nokogiri::HTML(Jekyll::Devto::HTML.without_blank_lines(convert(html))).at('code').text
   end
 
+  def test_absolute_url_takes_a_string_a_hash_or_nothing
+    assert_equal 'https://example.com/a.png', Jekyll::Devto::HTML.absolute_url('/a.png', BASE)
+    assert_equal 'https://example.com/b.png', Jekyll::Devto::HTML.absolute_url({ 'path' => '/b.png' }, BASE)
+    assert_equal 'https://cdn.example.com/c.png', Jekyll::Devto::HTML.absolute_url('https://cdn.example.com/c.png', BASE)
+    assert_equal 'https://example.com/d.png', Jekyll::Devto::HTML.absolute_url('d.png', "#{BASE}/")
+    assert_equal 'https://cdn.example.com/e.png', Jekyll::Devto::HTML.absolute_url('//cdn.example.com/e.png', BASE)
+    assert_nil Jekyll::Devto::HTML.absolute_url(nil, BASE)
+    assert_nil Jekyll::Devto::HTML.absolute_url({ 'alt' => 'no path' }, BASE)
+  end
+
   def test_base_url_with_a_trailing_slash
     assert_equal %(<a href="https://example.com/x">x</a>), Jekyll::Devto::HTML.convert(%(<a href="/x">x</a>), "#{BASE}/")
   end
