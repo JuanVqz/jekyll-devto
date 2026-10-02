@@ -52,8 +52,9 @@
     {%- if devto_tags %}
       <devto:tags>{{ devto_tags | join: "," | xml_escape }}</devto:tags>
     {%- endif %}
-    {%- if post.devto_series %}
-      <devto:series>{{ post.devto_series | xml_escape }}</devto:series>
+    {%- assign devto_series = post.devto_series | devto_text %}
+    {%- if devto_series %}
+      <devto:series>{{ devto_series | xml_escape }}</devto:series>
     {%- endif %}
       <content:encoded>{{ post.content | devto_html: site_url | xml_escape }}</content:encoded>
     </item>

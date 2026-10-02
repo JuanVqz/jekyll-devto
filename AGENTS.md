@@ -73,6 +73,7 @@ release-please-config.json   # release-please settings (initial-version, section
 - **Write the failing test first.** Every bug fix comes with a test that fails on `main` and passes with the fix. Check that it really fails before trusting it.
 - Feed behaviour is tested by **building the fixture site**, not by testing the template in isolation. Add a case to `test/fixtures/site/_posts/` when markup matters.
 - `test_survives_the_dev_to_import` replays dev.to's pipeline: Feedjira, then every `class` attribute removed (what `Feeds::CleanHtml` does), then ReverseMarkdown. Keep that test passing; it is the closest thing to dev.to we can run.
+- **Every front matter key the gem reads goes through `test/front_matter_types_test.rb`.** Front matter is YAML, so an author can write `true`, a number, a list or a hash for any key; each must build the site and give a feed the publisher can read, and a value the gem cannot use is ignored, never a crash. Adding a key means adding it to `POST_KEYS` (or the site options) there. This exists because `devto_cover: true` once crashed the whole Jekyll build.
 - The publisher never calls the real API in tests. Use `FakeClient` (`reject:` for a refused PUT, `ignore:` for a PUT dev.to accepts but leaves as a draft).
 - Before claiming a change works on real sites, build one: the author's blog (Chirpy, `~/code/mine/juanvqz.github.io`) with the gem as a `path:` dependency, and a fresh `jekyll new` (minima) site. Compare `_site/devto.xml`. The only expected difference between runs is `lastBuildDate`.
 
