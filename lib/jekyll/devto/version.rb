@@ -2,6 +2,6 @@
 
 module Jekyll
   module Devto
-    VERSION = '0.3.0'
+    VERSION = '0.3.1'
   end
 end
