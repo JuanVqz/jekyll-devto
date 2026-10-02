@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.2.0...v0.3.0) (2026-10-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **feed:** posts no longer get their image as the dev.to cover by default. Set devto: { cover: image } in _config.yml to keep the 0.2.0 behavior.
+
+### Features
+
+* **feed:** add a dev.to cover only when asked for ([#14](https://github.com/JuanVqz/jekyll-devto/issues/14)) ([9e9b43f](https://github.com/JuanVqz/jekyll-devto/commit/9e9b43f9422cee3ef4fd7a47aa483347bf5bfde8))
+
 ## [0.2.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.1.0...v0.2.0) (2026-10-02)
 
 
