@@ -29,9 +29,23 @@
       <category>{{ tag | xml_escape }}</category>
     {%- endfor %}
       <description>{{ post.description | default: post.excerpt | strip_html | strip_newlines | truncatewords: 60 | xml_escape }}</description>
-    {%- comment -%} The dev.to cover: devto_cover, else the post image (jekyll-og-image sets it). {%- endcomment -%}
-    {%- comment -%} Unlike content links, image paths leave baseurl out (Chirpy and jekyll-og-image add it when rendering). {%- endcomment -%}
-    {%- assign cover = post.devto_cover | default: post.image | devto_url: site_root %}
+    {%- comment -%}
+      The dev.to cover is opt-in: many Open Graph images carry the post title, which dev.to
+      already shows under the cover, and without one dev.to generates its own share image.
+      devto_cover on a post always wins (false turns it off, true uses the post image);
+      `devto: { cover: image }` in _config.yml uses each post's image. Unlike content
+      links, image paths leave baseurl out (Chirpy and jekyll-og-image add it when
+      rendering), so the cover needs it.
+    {%- endcomment -%}
+    {%- assign cover = "" %}
+    {%- if post.devto_cover == false %}
+    {%- elsif post.devto_cover == true %}
+      {%- assign cover = post.image | devto_url: site_root %}
+    {%- elsif post.devto_cover %}
+      {%- assign cover = post.devto_cover | devto_url: site_root %}
+    {%- elsif devto.cover == "image" or devto.cover == true %}
+      {%- assign cover = post.image | devto_url: site_root %}
+    {%- endif %}
     {%- if cover != "" %}
       <devto:cover>{{ cover | xml_escape }}</devto:cover>
     {%- endif %}

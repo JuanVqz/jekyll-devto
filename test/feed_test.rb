@@ -13,7 +13,7 @@ class FeedTest < Minitest::Test
   def item(title) = items.find { |i| i.elements['title'].text == title }
 
   def test_is_valid_rss_with_every_post_that_did_not_opt_out
-    assert_equal ['Plain Post', 'Code & Links'], items.map { |i| i.elements['title'].text }
+    assert_equal ['Plain Post', 'Code & Links', 'No Cover'], items.map { |i| i.elements['title'].text }
   end
 
   def test_carries_the_full_post
@@ -68,21 +68,44 @@ class FeedTest < Minitest::Test
     refute_includes body, '/blog/blog/'
   end
 
-  def test_cover_is_the_post_image_made_absolute
-    assert_equal 'https://example.com/assets/img/og/code-and-links.png', item('Code & Links').elements['devto:cover'].text
+  def cover_in(feed_xml, title)
+    REXML::Document.new(feed_xml).get_elements('//item').find { |i| i.elements['title'].text == title }.elements['devto:cover']&.text
+  end
+
+  # Many Open Graph images (jekyll-og-image, Chirpy) carry the post title,
+  # which dev.to already shows under the cover, so covers are opt-in.
+  def test_no_cover_by_default
+    assert_nil item('Code & Links').elements['devto:cover']
+    assert_nil item('No Cover').elements['devto:cover']
+  end
+
+  def test_devto_cover_is_used_without_the_site_option
+    assert_equal 'https://cdn.example.com/cover.png', item('Plain Post').elements['devto:cover'].text
+  end
+
+  def test_site_option_uses_each_post_image
+    custom = build_feed('devto' => { 'cover' => 'image' })
+
+    assert_equal 'https://example.com/assets/img/og/code-and-links.png', cover_in(custom, 'Code & Links')
+    assert_equal 'https://cdn.example.com/cover.png', cover_in(custom, 'Plain Post')
+  end
+
+  def test_devto_cover_true_opts_a_post_in_with_its_image
+    custom = build_feed('defaults' => [{ 'scope' => { 'path' => '_posts/2026-01-10-code-and-links.md' }, 'values' => { 'devto_cover' => true } }])
+
+    assert_equal 'https://example.com/assets/img/og/code-and-links.png', cover_in(custom, 'Code & Links')
+  end
+
+  def test_devto_cover_false_opts_a_post_out
+    assert_nil cover_in(build_feed('devto' => { 'cover' => 'image' }), 'No Cover')
   end
 
   # Image paths leave baseurl out (Chirpy and jekyll-og-image add it when
   # rendering), so the cover needs it, unlike content links.
   def test_cover_carries_the_baseurl
-    custom = build_feed('baseurl' => '/blog')
-    cover = REXML::Document.new(custom).get_elements('//item').find { |i| i.elements['title'].text == 'Code & Links' }.elements['devto:cover'].text
+    custom = build_feed('baseurl' => '/blog', 'devto' => { 'cover' => 'image' })
 
-    assert_equal 'https://example.com/blog/assets/img/og/code-and-links.png', cover
-  end
-
-  def test_devto_cover_wins_over_the_post_image
-    assert_equal 'https://cdn.example.com/cover.png', item('Plain Post').elements['devto:cover'].text
+    assert_equal 'https://example.com/blog/assets/img/og/code-and-links.png', cover_in(custom, 'Code & Links')
   end
 
   def test_limit_and_path_are_configurable
