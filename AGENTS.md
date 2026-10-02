@@ -63,7 +63,7 @@ release-please-config.json   # release-please settings (initial-version, section
 
 ## Ruby versions
 
-- **The minimum is what matters.** The gem runs on the Jekyll site's Ruby, not ours, so `required_ruby_version` (`>= 3.1`) is a promise about syntax and stdlib. Endless methods (`def x = 1`) are fine (3.0+). Not allowed in `lib/` or `exe/`: anonymous argument forwarding `(*)`, `(**)`, `(&)` and `Data.define` (3.2+), `it` (3.4+).
+- **The minimum is what matters.** The gem runs on the Jekyll site's Ruby, not ours, so `required_ruby_version` (`>= 3.1`) is a promise about syntax and stdlib. Endless methods (`def x = 1`, 3.0+) and anonymous block forwarding (`(&)`, 3.1+) are fine. Not allowed in `lib/` or `exe/`: anonymous argument forwarding `(*)` and `(**)` and `Data.define` (3.2+), `it` (3.4+).
 - **CI runs 3.1, 3.2, 3.3, 3.4 and 4.0.** The 3.1 job is the guard for the minimum; keep it in the matrix until the minimum is raised on purpose. `Gemfile.lock` is gitignored so each job resolves gems for its own Ruby.
 - **Development uses Ruby 4.0** (`.tool-versions`, `4.0.6`). CI's `4.0` resolves to the newest patch (4.0.7 at the time of writing); bump the pin once asdf's ruby plugin lists it.
 - Raising the minimum is a breaking change for users: `feat!:` or a `BREAKING CHANGE:` footer, and update the matrix and the gemspec together.
