@@ -115,5 +115,27 @@ class BacklogTest < Minitest::Test
     _, out, = run_backlog(client, backlog: 1)
 
     assert_includes out, 'Backlog: no draft left to publish'
+  end  # A draft dev.to rejects must not hold the backlog back on every run: the
+  # next old draft still goes out, and the run still reports the failure.
+  def test_a_rejected_backlog_draft_does_not_use_up_the_count
+    client = FakeClient.new(all_drafts, reject: [2])
+    failures, = run_backlog(client, backlog: 1)
+
+    assert_equal 1, failures
+    assert_equal [1, 2, 3], client.updates.map(&:first)
+  end
+
+  # Matching falls back to the title, so an old post sharing a title with a
+  # post in the window must not land on the draft the window already used.
+  def test_backlog_does_not_reuse_a_draft_matched_by_title
+    feed = FEED.sub('<title>Old A</title>', '<title>Fresh</title>')
+    client = FakeClient.new([draft(1, 'Fresh'), draft(3, 'Old B')])
+    Dir.mktmpdir do |dir|
+      File.write(path = File.join(dir, 'devto.xml'), feed)
+      Jekyll::Devto::Publisher.new(feed: path, client: client, days: 7, publish: true, backlog: 1,
+                                   now: NOW, out: StringIO.new, err: StringIO.new).run
+    end
+
+    assert_equal [1, 3], client.updates.map(&:first)
   end
 end

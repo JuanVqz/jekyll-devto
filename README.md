@@ -102,7 +102,7 @@ bundle exec jekyll-devto publish --publish --backlog 1
 
 - **The pace comes from how often you run it.** The gem does not schedule anything: `--backlog 1` on a cron that runs Thursdays and Saturdays publishes two old posts a week; on a daily cron, one a day. Each publish notifies your dev.to followers, so a slow pace is kinder than `--backlog 40` once.
 - **Nothing to track.** Each run looks at which drafts are still drafts; a published one is no longer a candidate, so the next run picks the next post. An old post with no draft (already published, or never imported) is skipped and does not use up the count.
-- **To keep a post off dev.to**, set `devto: false` in its front matter: it leaves the feed, and its draft is never published. To keep a whole period off, use a `defaults` scope instead of editing every post, for example everything before 2026:
+- **To keep a post off dev.to**, set `devto: false` in its front matter: it leaves the feed, and its draft is never published. To keep a whole period off, use a `defaults` scope instead of editing every post, for example everything from 2020 through 2025:
 
 ```yaml
 # _config.yml

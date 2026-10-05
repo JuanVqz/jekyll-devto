@@ -44,13 +44,15 @@ module Jekyll
 
         sent = {}
         failures = []
+        taken = []
         posts.each do |post|
           draft = find_draft(drafts, post)
           next report_missing(post, drafts) unless draft
 
+          taken << draft['id']
           publish_draft(post, draft, sent, failures)
         end
-        publish_backlog(backlog, drafts, sent, failures) if @backlog.positive?
+        publish_backlog(backlog, drafts.reject { |d| taken.include?(d['id']) }, sent, failures) if @backlog.positive?
 
         failures.concat(still_drafts(sent))
         @err.puts "#{failures.size} post(s) failed to publish" if failures.any?
@@ -174,33 +176,40 @@ module Jekyll
       # Up to --backlog drafts of older posts, newest first. An old post with
       # no draft was already published (or never imported): it is skipped
       # quietly and does not use up the count, or every run would list the
-      # whole archive.
+      # whole archive. A draft dev.to rejects does not use it up either, or
+      # one bad draft would stall the backlog on every run. Each draft is
+      # used once: two posts with the same title must not both land on it.
       def publish_backlog(posts, drafts, sent, failures)
         picked = 0
+        found = false
         posts.each do |post|
           break if picked >= @backlog
 
           draft = find_draft(drafts, post) or next
-          picked += 1
-          publish_draft(post, draft, sent, failures, note: ' (backlog)')
+          found = true
+          drafts -= [draft]
+          picked += 1 if publish_draft(post, draft, sent, failures, note: ' (backlog)')
         end
-        @out.puts 'Backlog: no draft left to publish' if picked.zero?
+        @out.puts 'Backlog: no draft left to publish' unless found
       end
 
       # One rejected post must not stop the rest, or every retry would stop at it.
+      # Returns false when dev.to rejected the draft.
       def publish_draft(post, draft, sent, failures, note: '')
         unless @publish
           @out.puts "  would publish #{post.title.inspect} -> dev.to draft #{draft['id']}#{note}"
-          return
+          return true
         end
 
         body = self.class.prepared_body(draft['body_markdown'], post, cover: new_cover(draft, post))
         result = @client.update(draft['id'], published: true, body_markdown: body)
         sent[draft['id']] = post
         @out.puts "  sent    #{post.title.inspect} -> #{result['url']}#{note}"
+        true
       rescue StandardError => e
         failures << post
         @err.puts "  FAILED  #{post.title.inspect}: #{e.message}"
+        false
       end
 
       # A cover chosen in dev.to's editor lives in the article (main_image),
