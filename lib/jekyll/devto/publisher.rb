@@ -20,8 +20,9 @@ module Jekyll
 
       Post = Struct.new(:title, :link, :date, :code_blocks, :cover, :tags, :series, keyword_init: true)
 
-      def initialize(feed:, client:, days: 7, publish: false, now: Time.now, out: $stdout, err: $stderr)
+      def initialize(feed:, client:, days: 7, publish: false, backlog: 0, now: Time.now, out: $stdout, err: $stderr)
         @feed = feed
+        @backlog = backlog
         @client = client
         @days = days
         @publish = publish
@@ -33,8 +34,10 @@ module Jekyll
       # Returns the number of posts that failed to publish.
       def run
         posts = due_posts
+        backlog = @backlog.positive? ? backlog_posts : []
         @out.puts "Posts live in the last #{@days} days: #{posts.size}"
-        return 0 if posts.empty?
+        @out.puts "Backlog: #{backlog.size} older posts, publishing up to #{@backlog}" if @backlog.positive?
+        return 0 if posts.empty? && backlog.empty?
 
         drafts = @client.drafts
         @out.puts "Drafts on dev.to: #{drafts.size}"
@@ -45,21 +48,9 @@ module Jekyll
           draft = find_draft(drafts, post)
           next report_missing(post, drafts) unless draft
 
-          unless @publish
-            @out.puts "  would publish #{post.title.inspect} -> dev.to draft #{draft['id']}"
-            next
-          end
-
-          # One rejected post must not stop the rest, or every retry would stop at it.
-          begin
-            result = @client.update(draft['id'], published: true, body_markdown: self.class.prepared_body(draft['body_markdown'], post, cover: new_cover(draft, post)))
-            sent[draft['id']] = post
-            @out.puts "  sent    #{post.title.inspect} -> #{result['url']}"
-          rescue StandardError => e
-            failures << post
-            @err.puts "  FAILED  #{post.title.inspect}: #{e.message}"
-          end
+          publish_draft(post, draft, sent, failures)
         end
+        publish_backlog(backlog, drafts, sent, failures) if @backlog.positive?
 
         failures.concat(still_drafts(sent))
         @err.puts "#{failures.size} post(s) failed to publish" if failures.any?
@@ -151,9 +142,26 @@ module Jekyll
       end
 
       def due_posts
-        REXML::Document.new(read_feed).get_elements('//item').filter_map do |item|
+        live_posts.select { |post| post.date >= window_start }
+      end
+
+      # Posts live before the --days window, newest first: the archive dev.to
+      # imported as drafts and that --backlog publishes a few at a time.
+      def backlog_posts
+        live_posts.select { |post| post.date < window_start }.sort_by(&:date).reverse
+      end
+
+      private
+
+      def window_start
+        @now - (@days * 86_400)
+      end
+
+      # Every post in the feed that is already live, in feed order.
+      def live_posts
+        @live_posts ||= REXML::Document.new(read_feed).get_elements('//item').filter_map do |item|
           date = Time.rfc2822(item.elements['pubDate'].text)
-          next if date > @now || date < @now - (@days * 86_400)
+          next if date > @now
 
           Post.new(title: item.elements['title'].text.to_s.strip, link: item.elements['link'].text.to_s.strip, date: date,
                    code_blocks: HTML.code_blocks(item.elements['content:encoded']&.text),
@@ -163,7 +171,37 @@ module Jekyll
         end
       end
 
-      private
+      # Up to --backlog drafts of older posts, newest first. An old post with
+      # no draft was already published (or never imported): it is skipped
+      # quietly and does not use up the count, or every run would list the
+      # whole archive.
+      def publish_backlog(posts, drafts, sent, failures)
+        picked = 0
+        posts.each do |post|
+          break if picked >= @backlog
+
+          draft = find_draft(drafts, post) or next
+          picked += 1
+          publish_draft(post, draft, sent, failures, note: ' (backlog)')
+        end
+        @out.puts 'Backlog: no draft left to publish' if picked.zero?
+      end
+
+      # One rejected post must not stop the rest, or every retry would stop at it.
+      def publish_draft(post, draft, sent, failures, note: '')
+        unless @publish
+          @out.puts "  would publish #{post.title.inspect} -> dev.to draft #{draft['id']}#{note}"
+          return
+        end
+
+        body = self.class.prepared_body(draft['body_markdown'], post, cover: new_cover(draft, post))
+        result = @client.update(draft['id'], published: true, body_markdown: body)
+        sent[draft['id']] = post
+        @out.puts "  sent    #{post.title.inspect} -> #{result['url']}#{note}"
+      rescue StandardError => e
+        failures << post
+        @err.puts "  FAILED  #{post.title.inspect}: #{e.message}"
+      end
 
       # A cover chosen in dev.to's editor lives in the article (main_image),
       # not in the body's front matter, and a cover_image key in the front

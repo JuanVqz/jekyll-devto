@@ -7,7 +7,7 @@ Guidelines for agentic coding assistants working on `jekyll-devto`, a Jekyll plu
 Two parts that work together:
 
 1. **The feed** (`lib/jekyll/devto/generator.rb`, `feed.xml`, `html.rb`). A generator adds `/devto.xml`: RSS 2.0 with the full rendered post in `<content:encoded>`. `HTML.convert` turns Rouge code blocks into plain `<pre><code>` without line-number gutters and makes root-relative `src`/`href` absolute, only inside real tags.
-2. **The publisher** (`publisher.rb`, `client.rb`, `exe/jekyll-devto`). `jekyll-devto publish` reads the **live** feed, keeps the posts published in the last N days, finds the draft dev.to imported from each one (by `canonical_url`, then title), and publishes it through the dev.to API. It does a dry run unless you pass `--publish`.
+2. **The publisher** (`publisher.rb`, `client.rb`, `exe/jekyll-devto`). `jekyll-devto publish` reads the **live** feed, keeps the posts published in the last N days, finds the draft dev.to imported from each one (by `canonical_url`, then title), and publishes it through the dev.to API. It does a dry run unless you pass `--publish`. `--backlog N` also publishes up to N drafts of posts older than the window, newest first, so an imported archive goes out a few at a time; the pace is set by how often the user runs it, and the gem keeps no state.
 
 The design rule: work from the HTML Jekyll already rendered, and never edit the user's posts.
 
