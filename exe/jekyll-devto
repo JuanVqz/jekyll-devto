@@ -6,6 +6,7 @@
 #   jekyll-devto publish                 # dry run, prints the plan
 #   jekyll-devto publish --publish       # publishes
 #   jekyll-devto publish --days 14 --feed https://example.com/devto.xml
+#   jekyll-devto publish --publish --backlog 1   # also 1 older draft, newest first
 #
 # The API key comes from the DEVTO_API_KEY environment variable
 # (https://dev.to/settings/extensions).
@@ -25,11 +26,16 @@ def default_feed
   "#{url.chomp('/')}#{config['baseurl']}/#{(path || 'devto.xml').sub(%r{\A/}, '')}"
 end
 
-options = { days: 7, publish: false, feed: nil }
+options = { days: 7, publish: false, feed: nil, backlog: 0 }
 parser = OptionParser.new do |o|
   o.banner = 'Usage: jekyll-devto publish [options]'
   o.on('--publish', 'Publish the drafts (default: dry run)') { options[:publish] = true }
   o.on('--days N', Integer, 'Only posts published in the last N days (default: 7)') { |n| options[:days] = n }
+  o.on('--backlog N', Integer, 'Also publish up to N drafts of older posts, newest first (default: 0)') do |n|
+    raise OptionParser::InvalidArgument, "#{n} (must be 0 or more)" if n.negative?
+
+    options[:backlog] = n
+  end
   o.on('--feed URL_OR_PATH', 'The dev.to feed (default: url + devto.xml from _config.yml)') { |f| options[:feed] = f }
   o.on('-v', '--version', 'Print the version') { puts Jekyll::Devto::VERSION; exit }
 end
@@ -50,7 +56,8 @@ begin
     feed: feed,
     client: Jekyll::Devto::Client.new(ENV.fetch('DEVTO_API_KEY', nil)),
     days: options[:days],
-    publish: options[:publish]
+    publish: options[:publish],
+    backlog: options[:backlog]
   ).run
 rescue Jekyll::Devto::Client::Error => e
   abort e.message

@@ -99,6 +99,16 @@ class NetworkTest < Minitest::Test
     refute_includes err, '.rb:'
   end
 
+  def test_backlog_must_be_a_number_of_zero_or_more
+    [%w[--backlog -1], %w[--backlog many]].each do |args|
+      _, err, status = Open3.capture3(RbConfig.ruby, EXE, 'publish', *args)
+
+      refute status.success?, args.join(' ')
+      assert_includes err, 'invalid argument: --backlog'
+      refute_includes err, '.rb:'
+    end
+  end
+
   def test_unknown_option
     _, err, status = Open3.capture3(RbConfig.ruby, EXE, 'publish', '--nope')
 

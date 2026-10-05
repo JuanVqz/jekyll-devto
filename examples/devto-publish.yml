@@ -47,4 +47,5 @@ jobs:
 
       - name: Publish dev.to drafts
         if: env.DEVTO_API_KEY != ''
+        # Add --backlog 1 to also publish one older draft per run (see the README).
         run: bundle exec jekyll-devto publish --publish --days "$DAYS"

@@ -92,6 +92,27 @@ imported from each one, and publishes it.
 - A post dev.to rejects is reported and the run moves on. Afterwards the drafts are listed again, and
   any post still among them fails the run. The command exits 1 if anything failed.
 
+### Publishing an archive a few posts at a time
+
+dev.to imports your whole feed, so an existing blog ends up with every older post as a draft, and the 7-day window leaves them there. `--backlog N` also publishes up to `N` of those older drafts on each run, newest first:
+
+```sh
+bundle exec jekyll-devto publish --publish --backlog 1
+```
+
+- **The pace comes from how often you run it.** The gem does not schedule anything: `--backlog 1` on a cron that runs Thursdays and Saturdays publishes two old posts a week; on a daily cron, one a day. Each publish notifies your dev.to followers, so a slow pace is kinder than `--backlog 40` once.
+- **Nothing to track.** Each run looks at which drafts are still drafts; a published one is no longer a candidate, so the next run picks the next post. An old post with no draft (already published, or never imported) is skipped and does not use up the count.
+- **To keep a post off dev.to**, set `devto: false` in its front matter: it leaves the feed, and its draft is never published. To keep a whole period off, use a `defaults` scope instead of editing every post, for example everything from 2020 through 2025:
+
+```yaml
+# _config.yml
+defaults:
+  - scope:
+      path: "_posts/202[0-5]-*"
+    values:
+      devto: false
+```
+
 ### On a schedule with GitHub Actions
 
 [`examples/devto-publish.yml`](examples/devto-publish.yml) runs it after each deploy and once a day.
