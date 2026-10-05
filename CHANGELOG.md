@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.3.1...v0.4.0) (2026-10-05)
+
+
+### Features
+
+* **publisher:** publish an imported archive a few posts at a time ([#18](https://github.com/JuanVqz/jekyll-devto/issues/18)) ([981045b](https://github.com/JuanVqz/jekyll-devto/commit/981045b9ad702c586a5cb6672b1981d7e4958257))
+
 ## [0.3.1](https://github.com/JuanVqz/jekyll-devto/compare/v0.3.0...v0.3.1) (2026-10-02)
 
 
