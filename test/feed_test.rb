@@ -137,8 +137,6 @@ class FeedTest < Minitest::Test
     assert_includes markdown, '[link](https://example.com/about/)'
   end
 
-  # The whole path a code block takes: feed, dev.to's import, then the
-  # publisher writing each block's language into the draft's fences.
   # The fixture post has several code blocks in a row; each must still be its
   # own block after dev.to's import, not one block holding all of them.
   def test_adjacent_code_blocks_stay_separate_through_the_import
@@ -148,6 +146,8 @@ class FeedTest < Minitest::Test
     assert_equal Jekyll::Devto::HTML.code_blocks(content).size * 2, fences
   end
 
+  # The whole path a code block takes: feed, dev.to's import, then the
+  # publisher writing each block's language into the draft's fences.
   def test_code_languages_reach_the_published_draft
     content = item('Code & Links').elements['content:encoded'].text
     published = Jekyll::Devto::Publisher.with_code_languages(dev_to_import('Code & Links'), Jekyll::Devto::HTML.code_blocks(content))
