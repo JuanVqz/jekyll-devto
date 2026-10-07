@@ -62,6 +62,16 @@ module Jekyll
       # Blank lines between tags are only formatting, and a newline inside code
       # written as &#10; is the same character once parsed, so the post reads
       # the same while the count of blank lines drops to zero.
+      ZERO_WIDTH_PARAGRAPH = '<p>&#8203;</p>'
+
+      # dev.to's import deletes every "```\n\n```" after converting
+      # (Feeds::AssembleArticleMarkdown), so two code blocks with nothing between
+      # them become one block holding both. A paragraph with a zero-width space
+      # keeps them apart and does not show.
+      def separate_code_blocks(html)
+        html.to_s.gsub(%r{</pre>\s*(?=<pre\b)}) { "</pre>\n#{ZERO_WIDTH_PARAGRAPH}\n" }
+      end
+
       def without_blank_lines(html)
         html.split(%r{(<pre\b[^>]*>.*?</pre>)}m).map do |part|
           part.start_with?('<pre') ? part.gsub("\n", '&#10;') : part.gsub(/\n\s*\n/, "\n")
@@ -152,7 +162,7 @@ module Jekyll
       end
 
       def devto_html(html, base_url)
-        HTML.without_blank_lines(HTML.convert(html, base_url))
+        HTML.without_blank_lines(HTML.separate_code_blocks(HTML.convert(html, base_url)))
       end
     end
   end

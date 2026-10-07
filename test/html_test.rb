@@ -140,6 +140,13 @@ class HTMLTest < Minitest::Test
     assert_nil filters.devto_list(' , ')
   end
 
+  def test_adjacent_code_blocks_get_an_invisible_separator
+    html = %(<pre><code>a</code></pre>\n\n<pre data-lang="yaml"><code>b</code></pre><p>x</p><pre><code>c</code></pre>)
+
+    assert_equal %(<pre><code>a</code></pre>\n<p>&#8203;</p>\n<pre data-lang="yaml"><code>b</code></pre><p>x</p><pre><code>c</code></pre>),
+                 Jekyll::Devto::HTML.separate_code_blocks(html)
+  end
+
   def test_base_url_with_a_trailing_slash
     assert_equal %(<a href="https://example.com/x">x</a>), Jekyll::Devto::HTML.convert(%(<a href="/x">x</a>), "#{BASE}/")
   end

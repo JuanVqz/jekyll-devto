@@ -124,7 +124,9 @@ class FeedTest < Minitest::Test
     return content unless block_tags > content.scan(/\n\s*\n/).size
 
     html = Nokogiri::HTML(content).tap { |doc| doc.xpath('//@class').remove }.to_html
-    ReverseMarkdown.convert(html, github_flavored: true)
+    # Forem then deletes every "```\n\n```", which merges two code blocks that
+    # have nothing between them (AssembleArticleMarkdown#assemble_body_markdown).
+    ReverseMarkdown.convert(html, github_flavored: true).gsub("```\n\n```", '')
   end
 
   def test_survives_the_dev_to_import
@@ -137,6 +139,15 @@ class FeedTest < Minitest::Test
 
   # The whole path a code block takes: feed, dev.to's import, then the
   # publisher writing each block's language into the draft's fences.
+  # The fixture post has several code blocks in a row; each must still be its
+  # own block after dev.to's import, not one block holding all of them.
+  def test_adjacent_code_blocks_stay_separate_through_the_import
+    content = item('Code & Links').elements['content:encoded'].text
+    fences = dev_to_import('Code & Links').scan(/^```/).size
+
+    assert_equal Jekyll::Devto::HTML.code_blocks(content).size * 2, fences
+  end
+
   def test_code_languages_reach_the_published_draft
     content = item('Code & Links').elements['content:encoded'].text
     published = Jekyll::Devto::Publisher.with_code_languages(dev_to_import('Code & Links'), Jekyll::Devto::HTML.code_blocks(content))
