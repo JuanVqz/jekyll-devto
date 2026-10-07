@@ -47,6 +47,9 @@ module Jekyll
       # Kramdown's name for a fence with no language.
       NO_LANGUAGE = %w[plaintext text].freeze
 
+      # What separate_code_blocks puts between two adjacent code blocks.
+      ZERO_WIDTH_PARAGRAPH = '<p>&#8203;</p>'
+
       module_function
 
       def convert(html, base_url)
@@ -66,6 +69,14 @@ module Jekyll
         html.split(%r{(<pre\b[^>]*>.*?</pre>)}m).map do |part|
           part.start_with?('<pre') ? part.gsub("\n", '&#10;') : part.gsub(/\n\s*\n/, "\n")
         end.join
+      end
+
+      # dev.to's import deletes every "```\n\n```" after converting
+      # (Feeds::AssembleArticleMarkdown), so two code blocks with nothing between
+      # them become one block holding both. A paragraph with a zero-width space
+      # keeps them apart; it has no text, only a line of space.
+      def separate_code_blocks(html)
+        html.to_s.gsub(%r{</pre>\s*(?=<pre\b)}) { "</pre>\n#{ZERO_WIDTH_PARAGRAPH}\n" }
       end
 
       # Kramdown writes the fence's language as a language-* class, and the
@@ -152,7 +163,7 @@ module Jekyll
       end
 
       def devto_html(html, base_url)
-        HTML.without_blank_lines(HTML.convert(html, base_url))
+        HTML.without_blank_lines(HTML.separate_code_blocks(HTML.convert(html, base_url)))
       end
     end
   end
