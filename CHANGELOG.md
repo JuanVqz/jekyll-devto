@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/JuanVqz/jekyll-devto/compare/v0.4.0...v0.4.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* **feed:** keep adjacent code blocks separate on dev.to ([#20](https://github.com/JuanVqz/jekyll-devto/issues/20)) ([6058520](https://github.com/JuanVqz/jekyll-devto/commit/6058520dc01714e21cde641570365b10af44f91a))
+
 ## [0.4.0](https://github.com/JuanVqz/jekyll-devto/compare/v0.3.1...v0.4.0) (2026-10-05)
 
 
